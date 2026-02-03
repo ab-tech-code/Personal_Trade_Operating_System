@@ -227,3 +227,28 @@ textarea {
   border: none;
   margin-bottom: 1rem;
 }
+
+
+
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.chart-placeholder {
+  background: #0f172a;
+  border: 1px solid #1f2933;
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 220px;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
