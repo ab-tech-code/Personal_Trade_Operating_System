@@ -17,7 +17,7 @@ router.get("/strategy", protect, getStrategyAnalytics);
 router.get("/symbols", protect, getSymbolAnalytics);
 router.get("/monthly", protect, getMonthlyAnalytics);
 
-// --- New Equity Curve Route ---
+// --- Equity Curve Route ---
 router.get("/equity-curve", protect, async (req, res) => {
   try {
     const trades = await Trade.find({
@@ -39,8 +39,8 @@ router.get("/equity-curve", protect, async (req, res) => {
   }
 });
 
-// --- Fixed Win-Loss Route ---
-router.get("/win-loss", protect, async (req, res) => { // Changed auth to protect
+// --- Win-Loss Route ---
+router.get("/win-loss", protect, async (req, res) => {
   try {
     const trades = await Trade.find({
       user: req.user.id,
@@ -61,6 +61,45 @@ router.get("/win-loss", protect, async (req, res) => { // Changed auth to protec
     ]);
   } catch (err) {
     res.status(500).json({ message: "Failed to compute win/loss" });
+  }
+});
+
+// --- New Monthly Performance Route ---
+/**
+ * GET /api/analytics/monthly-performance
+ * Returns PnL grouped by month
+ */
+router.get("/monthly-performance", protect, async (req, res) => { // Fixed 'auth' to 'protect'
+  try {
+    const trades = await Trade.find({
+      user: req.user.id,
+      status: "closed",
+    });
+
+    const monthlyMap = {};
+
+    trades.forEach((trade) => {
+      const date = new Date(trade.closedAt);
+      const monthKey = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      monthlyMap[monthKey] =
+        (monthlyMap[monthKey] || 0) + (trade.pnl || 0);
+    });
+
+    const result = Object.keys(monthlyMap)
+      .sort()
+      .map((month) => ({
+        month,
+        pnl: monthlyMap[month],
+      }));
+
+    res.json(result);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to compute monthly performance" });
   }
 });
 

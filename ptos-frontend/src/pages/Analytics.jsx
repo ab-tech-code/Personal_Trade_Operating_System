@@ -2,26 +2,34 @@ import React, { useEffect, useState } from "react";
 import AppLayout from "../layouts/AppLayout";
 import ChartPlaceholder from "../components/ChartPlaceholder";
 import EquityCurveChart from "../components/EquityCurveChart";
-import WinLossChart from "../components/WinLossChart"; // New Import
-import { fetchEquityCurve, fetchWinLoss } from "../services/analytics.service"; // New Import
+import WinLossChart from "../components/WinLossChart";
+import MonthlyPerformanceChart from "../components/MonthlyPerformanceChart"; // New Import
+import { 
+  fetchEquityCurve, 
+  fetchWinLoss, 
+  fetchMonthlyPerformance 
+} from "../services/analytics.service"; // New Import
 import Loading from "../components/Loading";
 
 const Analytics = () => {
   const [equityCurve, setEquityCurve] = useState([]);
-  const [winLoss, setWinLoss] = useState([]); // New State
+  const [winLoss, setWinLoss] = useState([]);
+  const [monthlyPerformance, setMonthlyPerformance] = useState([]); // New State
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch both datasets
-        const [equityData, winLossData] = await Promise.all([
+        // Fetch all three datasets simultaneously
+        const [equityData, winLossData, monthlyData] = await Promise.all([
           fetchEquityCurve(),
           fetchWinLoss(),
+          fetchMonthlyPerformance(), // New fetch call
         ]);
         
         setEquityCurve(equityData);
         setWinLoss(winLossData);
+        setMonthlyPerformance(monthlyData); // New state update
       } catch (err) {
         console.error("Error loading analytics data:", err.message);
       } finally {
@@ -49,7 +57,7 @@ const Analytics = () => {
           )}
         </div>
 
-        {/* Win / Loss Distribution Section - Replaced Placeholder */}
+        {/* Win / Loss Distribution Section */}
         <div className="chart-placeholder">
           <h3>Win / Loss Distribution</h3>
           {loading ? (
@@ -61,8 +69,19 @@ const Analytics = () => {
           )}
         </div>
 
-        {/* Keeping other placeholders as they were */}
-        <ChartPlaceholder title="Monthly Performance" />
+        {/* Monthly Performance Section - Replaced Placeholder */}
+        <div className="chart-placeholder">
+          <h3>Monthly Performance</h3>
+          {loading ? (
+            <Loading />
+          ) : monthlyPerformance.length === 0 ? (
+            <p className="empty-state">No data yet</p>
+          ) : (
+            <MonthlyPerformanceChart data={monthlyPerformance} />
+          )}
+        </div>
+
+        {/* Keeping remaining placeholder as it was */}
         <ChartPlaceholder title="Strategy Performance" />
       </div>
     </AppLayout>

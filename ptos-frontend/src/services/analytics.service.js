@@ -15,3 +15,11 @@ export const fetchEquityCurve = async () => {
 export const fetchWinLoss = async () => {
   return apiRequest("/analytics/win-loss");
 };
+
+
+/**
+ * Fetch monthly performance
+ */
+export const fetchMonthlyPerformance = async () => {
+  return apiRequest("/analytics/monthly-performance");
+};
