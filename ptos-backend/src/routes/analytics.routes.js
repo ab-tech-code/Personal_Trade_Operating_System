@@ -103,4 +103,60 @@ router.get("/monthly-performance", protect, async (req, res) => { // Fixed 'auth
   }
 });
 
+
+
+/**
+ * GET /api/analytics/strategy-performance
+ * Returns performance per strategy (Count, PnL, Win Rate)
+ */
+router.get("/strategy-performance", protect, async (req, res) => { // Fixed 'auth' to 'protect'
+  try {
+    const trades = await Trade.find({
+      user: req.user.id,
+      status: "closed",
+    });
+
+    const strategyMap = {};
+
+    trades.forEach((trade) => {
+      const key = trade.strategy || "Unlabeled";
+
+      if (!strategyMap[key]) {
+        strategyMap[key] = {
+          strategy: key,
+          tradeCount: 0,
+          totalPnL: 0,
+          wins: 0,
+        };
+      }
+
+      strategyMap[key].tradeCount += 1;
+      strategyMap[key].totalPnL += trade.pnl || 0;
+
+      if (trade.pnl > 0) {
+        strategyMap[key].wins += 1;
+      }
+    });
+
+    const result = Object.values(strategyMap).map((s) => ({
+      strategy: s.strategy,
+      tradeCount: s.tradeCount,
+      totalPnL: s.totalPnL,
+      winRate:
+        s.tradeCount === 0
+          ? 0
+          : Number(((s.wins / s.tradeCount) * 100).toFixed(1)),
+    }));
+
+    // Sort by profitability so the best strategy is at the top
+    result.sort((a, b) => b.totalPnL - a.totalPnL);
+
+    res.json(result);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to compute strategy performance" });
+  }
+});
+
 module.exports = router;

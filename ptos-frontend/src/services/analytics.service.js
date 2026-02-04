@@ -23,3 +23,10 @@ export const fetchWinLoss = async () => {
 export const fetchMonthlyPerformance = async () => {
   return apiRequest("/analytics/monthly-performance");
 };
+
+/**
+ * Fetch strategy performance
+ */
+export const fetchStrategyPerformance = async () => {
+  return apiRequest("/analytics/strategy-performance");
+};
