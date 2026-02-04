@@ -16,3 +16,15 @@ export const connectExchange = async (payload) => {
 export const fetchExchanges = async () => {
   return apiRequest("/exchanges");
 };
+
+
+
+
+/**
+ * Trigger exchange sync
+ */
+export const syncExchange = async (id) => {
+  return apiRequest(`/exchanges/${id}/sync`, {
+    method: "POST",
+  });
+};

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AppLayout from "../layouts/AppLayout";
 import ConnectExchangeModal from "../components/ConnectExchangeModal";
-import { fetchExchanges } from "../services/exchange.service";
+import { fetchExchanges, syncExchange } from "../services/exchange.service";
 
 const AVAILABLE_EXCHANGES = ["Binance", "Bybit"];
 
@@ -25,49 +25,67 @@ const Exchanges = () => {
     loadExchanges();
   }, []);
 
-  // Helper to find the connection status for a specific exchange card
-  const getStatus = (exchange) => {
-    const found = connections.find(
-      (c) => c.exchange?.toLowerCase() === exchange.toLowerCase()
-    );
-    return found ? found.status : "not connected";
+  const handleSync = async (id) => {
+    try {
+      await syncExchange(id);
+      // Refresh to show "syncing" status immediately
+      loadExchanges();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to start sync");
+    }
   };
 
   return (
     <AppLayout>
-      <h1>Exchange Connections</h1>
-      <p className="page-description">
-        Manage your API connections. PTOS uses AES-256 encryption to secure your keys.
-      </p>
+      <div className="page-header">
+        <h1>Exchange Connections</h1>
+        <button 
+          className="btn-primary" 
+          onClick={() => setActiveExchange("Binance")}
+        >
+          + Add New Connection
+        </button>
+      </div>
 
       <div className="exchange-list">
-        {AVAILABLE_EXCHANGES.map((ex) => {
-          const status = getStatus(ex);
-          const isConnected = status === "connected";
+        {/* Render Active Connections */}
+        {connections.length === 0 && !loading && (
+          <p className="empty-state">No exchanges connected yet.</p>
+        )}
 
-          return (
-            <div className={`exchange-card ${status}`} key={ex}>
-              <h3>{ex}</h3>
-              <p>
-                Status: <span className={`status-badge ${status}`}>{status}</span>
-              </p>
-              
-              <button 
-                className={isConnected ? "btn-secondary" : "btn-primary"}
-                onClick={() => setActiveExchange(ex)}
-              >
-                {isConnected ? "Update Keys" : `Connect ${ex}`}
-              </button>
+        {connections.map((conn) => (
+          <div className={`exchange-card ${conn.status}`} key={conn._id}>
+            <div className="card-header">
+              <h3>{conn.exchange}</h3>
+              <span className={`status-badge ${conn.status}`}>{conn.status}</span>
             </div>
-          );
-        })}
+
+            <div className="card-actions">
+              {conn.status === "connected" && (
+                <button 
+                  className="btn-sync" 
+                  onClick={() => handleSync(conn._id)}
+                >
+                  Sync Now
+                </button>
+              )}
+
+              {conn.status === "syncing" && (
+                <div className="syncing-indicator">
+                  <span className="spinner"></span>
+                  <p>Syncing trades...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {activeExchange && (
         <ConnectExchangeModal
           exchange={activeExchange}
           onClose={() => setActiveExchange(null)}
-          onSuccess={loadExchanges} // This triggers the re-fetch after success!
+          onSuccess={loadExchanges}
         />
       )}
     </AppLayout>

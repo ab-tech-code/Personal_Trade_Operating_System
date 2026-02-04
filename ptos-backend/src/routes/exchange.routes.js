@@ -43,11 +43,48 @@ router.post("/connect", protect, async (req, res) => {
  * List connected exchanges
  */
 router.get("/", protect, async (req, res) => {
-  const exchanges = await ExchangeConnection.find({
-    user: req.user.id,
-  }).select("-apiKey -apiSecret");
+  try {
+    const exchanges = await ExchangeConnection.find({
+      user: req.user.id,
+    }).select("-apiKey -apiSecret");
 
-  res.json(exchanges);
+    res.json(exchanges);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch exchanges" });
+  }
+});
+
+/**
+ * POST /api/exchanges/:id/sync
+ * Trigger manual sync (job-based)
+ */
+router.post("/:id/sync", protect, async (req, res) => {
+  try {
+    const connection = await ExchangeConnection.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!connection) {
+      return res.status(404).json({ message: "Exchange not found" });
+    }
+
+    // --- ENHANCEMENT: Check status BEFORE changing anything ---
+    if (connection.status === "syncing") {
+      return res.status(400).json({ message: "Sync already in progress" });
+    }
+
+    // Mark as syncing (worker will handle real sync later)
+    connection.status = "syncing";
+    await connection.save();
+
+    res.json({
+      message: "Sync started",
+      status: connection.status,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to start sync" });
+  }
 });
 
 module.exports = router;
