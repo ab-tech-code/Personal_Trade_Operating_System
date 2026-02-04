@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Trades from "./pages/Trades";
 import AddTrade from "./pages/AddTrade";
 import Analytics from "./pages/Analytics";
+import Exchanges from "./pages/Exchanges";
 
 
 const App = () => {
@@ -52,6 +53,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/app/exchanges"
+          element={
+            <ProtectedRoute>
+              <Exchanges />
             </ProtectedRoute>
           }
         />

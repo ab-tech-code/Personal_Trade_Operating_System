@@ -252,3 +252,67 @@ textarea {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+
+.exchange-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.exchange-card {
+  background: #0f172a;
+  border: 1px solid #1f2933;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.exchange-card button {
+  margin-top: 0.5rem;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .exchange-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #020617;
+  border: 1px solid #1f2933;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal input {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
