@@ -6,3 +6,12 @@ import { apiRequest } from "./api";
 export const fetchEquityCurve = async () => {
   return apiRequest("/analytics/equity-curve");
 };
+
+
+
+/**
+ * Fetch win/loss distribution
+ */
+export const fetchWinLoss = async () => {
+  return apiRequest("/analytics/win-loss");
+};
