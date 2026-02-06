@@ -1,9 +1,15 @@
 import { apiRequest } from "./api";
 
 /**
- * Fetch dashboard summary from the Analytics route
+ * Fetch dashboard summary stats
  */
 export const fetchDashboardSummary = async () => {
-  // We change "/dashboard/summary" to "/analytics/summary"
   return apiRequest("/analytics/summary");
+};
+
+/**
+ * Fetch recent trades for dashboard
+ */
+export const fetchRecentTrades = async () => {
+  return apiRequest("/analytics/recent-trades");
 };

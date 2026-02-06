@@ -5,22 +5,30 @@ import AppLayout from "../layouts/AppLayout";
 import StatCard from "../components/StatCard";
 import RecentTrades from "../components/RecentTrades";
 import Loading from "../components/Loading";
-import { fetchDashboardSummary } from "../services/dashboard.service";
+import {
+  fetchDashboardSummary,
+  fetchRecentTrades,
+} from "../services/dashboard.service";
 
 const Dashboard = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
+
+  const [summary, setSummary] = useState(null);
+  const [recentTrades, setRecentTrades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const summary = await fetchDashboardSummary();
-        setData(summary);
+        const summaryData = await fetchDashboardSummary();
+        const tradesData = await fetchRecentTrades();
+
+        setSummary(summaryData);
+        setRecentTrades(tradesData);
       } catch (err) {
-        setError(err.message);
+        setError("Failed to load dashboard");
       } finally {
         setLoading(false);
       }
@@ -45,10 +53,10 @@ const Dashboard = () => {
   if (error) {
     return (
       <AppLayout>
-        <div className="container">
-          <p style={{ color: "red" }}>{error}</p>
-          <button className="btn" onClick={handleLogout}>Logout</button>
-        </div>
+        <p style={{ color: "red" }}>{error}</p>
+        <button className="btn" onClick={handleLogout}>
+          Logout
+        </button>
       </AppLayout>
     );
   }
@@ -59,24 +67,34 @@ const Dashboard = () => {
         <h1>Dashboard</h1>
 
         <div className="stats-grid">
-          <StatCard label="Total PnL" value={`$${data.totalPnL}`} />
-          <StatCard label="Win Rate" value={`${data.winRate}%`} />
-          <StatCard label="Trades" value={data.tradeCount} />
+          <StatCard
+            label="Total PnL"
+            value={`$${summary.totalPnL}`}
+          />
+          <StatCard
+            label="Win Rate"
+            value={`${summary.winRate}%`}
+          />
+          <StatCard
+            label="Trades"
+            value={summary.totalTrades}
+          />
           <StatCard
             label="Last Activity"
             value={
-              data.lastActivity
-                ? new Date(data.lastActivity).toLocaleDateString()
+              recentTrades.length > 0
+                ? new Date(
+                    recentTrades[0].closedAt
+                  ).toLocaleDateString()
                 : "—"
             }
           />
         </div>
 
-        {/* Passing the trades prop as we updated in the previous step */}
-        <RecentTrades trades={data.recentTrades} />
+        <RecentTrades trades={recentTrades} />
 
         <p>Your Personal Trading Operating System</p>
-        
+
         <button className="btn" onClick={handleLogout}>
           Logout
         </button>

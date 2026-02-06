@@ -1,24 +1,71 @@
 const express = require("express");
-const protect = require("../middleware/auth.middleware");
+const router = express.Router();
+const auth = require("../middleware/auth.middleware");
 const Trade = require("../models/Trade");
 
-const {
-  getSummaryAnalytics,
-  getStrategyAnalytics,
-  getSymbolAnalytics,
-  getMonthlyAnalytics,
-} = require("../controllers/analytics.controller");
+/**
+ * ============================
+ * DASHBOARD SUMMARY
+ * ============================
+ * Used by /app/dashboard
+ */
+router.get("/summary", auth, async (req, res) => {
+  try {
+    const trades = await Trade.find({
+      user: req.user.id,
+      status: "closed",
+    });
 
-const router = express.Router();
+    const totalPnL = trades.reduce(
+      (sum, t) => sum + (t.pnl || 0),
+      0
+    );
 
-// --- Existing Routes ---
-router.get("/summary", protect, getSummaryAnalytics);
-router.get("/strategy", protect, getStrategyAnalytics);
-router.get("/symbols", protect, getSymbolAnalytics);
-router.get("/monthly", protect, getMonthlyAnalytics);
+    const wins = trades.filter((t) => t.pnl > 0).length;
+    const losses = trades.filter((t) => t.pnl <= 0).length;
 
-// --- Equity Curve Route ---
-router.get("/equity-curve", protect, async (req, res) => {
+    res.json({
+      totalPnL,
+      winRate:
+        trades.length === 0
+          ? 0
+          : Number(((wins / trades.length) * 100).toFixed(1)),
+      totalTrades: trades.length,
+      wins,
+      losses,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load dashboard summary" });
+  }
+});
+
+/**
+ * ============================
+ * RECENT TRADES
+ * ============================
+ * Used by Dashboard "Recent Trades"
+ */
+router.get("/recent-trades", auth, async (req, res) => {
+  try {
+    const trades = await Trade.find({
+      user: req.user.id,
+      status: "closed",
+    })
+      .sort({ closedAt: -1 }) // 🔥 critical
+      .limit(5);
+
+    res.json(trades);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load recent trades" });
+  }
+});
+
+/**
+ * ============================
+ * EQUITY CURVE
+ * ============================
+ */
+router.get("/equity-curve", auth, async (req, res) => {
   try {
     const trades = await Trade.find({
       user: req.user.id,
@@ -26,6 +73,7 @@ router.get("/equity-curve", protect, async (req, res) => {
     }).sort({ closedAt: 1 });
 
     let cumulativePnL = 0;
+
     const curve = trades.map((trade) => {
       cumulativePnL += trade.pnl || 0;
       return {
@@ -33,14 +81,19 @@ router.get("/equity-curve", protect, async (req, res) => {
         equity: cumulativePnL,
       };
     });
+
     res.json(curve);
   } catch (err) {
     res.status(500).json({ message: "Failed to compute equity curve" });
   }
 });
 
-// --- Win-Loss Route ---
-router.get("/win-loss", protect, async (req, res) => {
+/**
+ * ============================
+ * WIN / LOSS
+ * ============================
+ */
+router.get("/win-loss", auth, async (req, res) => {
   try {
     const trades = await Trade.find({
       user: req.user.id,
@@ -64,12 +117,12 @@ router.get("/win-loss", protect, async (req, res) => {
   }
 });
 
-// --- New Monthly Performance Route ---
 /**
- * GET /api/analytics/monthly-performance
- * Returns PnL grouped by month
+ * ============================
+ * MONTHLY PERFORMANCE
+ * ============================
  */
-router.get("/monthly-performance", protect, async (req, res) => { // Fixed 'auth' to 'protect'
+router.get("/monthly-performance", auth, async (req, res) => {
   try {
     const trades = await Trade.find({
       user: req.user.id,
@@ -97,19 +150,16 @@ router.get("/monthly-performance", protect, async (req, res) => { // Fixed 'auth
 
     res.json(result);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to compute monthly performance" });
+    res.status(500).json({ message: "Failed to compute monthly performance" });
   }
 });
 
-
-
 /**
- * GET /api/analytics/strategy-performance
- * Returns performance per strategy (Count, PnL, Win Rate)
+ * ============================
+ * STRATEGY PERFORMANCE
+ * ============================
  */
-router.get("/strategy-performance", protect, async (req, res) => { // Fixed 'auth' to 'protect'
+router.get("/strategy-performance", auth, async (req, res) => {
   try {
     const trades = await Trade.find({
       user: req.user.id,
@@ -133,29 +183,24 @@ router.get("/strategy-performance", protect, async (req, res) => { // Fixed 'aut
       strategyMap[key].tradeCount += 1;
       strategyMap[key].totalPnL += trade.pnl || 0;
 
-      if (trade.pnl > 0) {
-        strategyMap[key].wins += 1;
-      }
+      if (trade.pnl > 0) strategyMap[key].wins += 1;
     });
 
-    const result = Object.values(strategyMap).map((s) => ({
-      strategy: s.strategy,
-      tradeCount: s.tradeCount,
-      totalPnL: s.totalPnL,
-      winRate:
-        s.tradeCount === 0
-          ? 0
-          : Number(((s.wins / s.tradeCount) * 100).toFixed(1)),
-    }));
-
-    // Sort by profitability so the best strategy is at the top
-    result.sort((a, b) => b.totalPnL - a.totalPnL);
+    const result = Object.values(strategyMap)
+      .map((s) => ({
+        strategy: s.strategy,
+        tradeCount: s.tradeCount,
+        totalPnL: s.totalPnL,
+        winRate:
+          s.tradeCount === 0
+            ? 0
+            : Number(((s.wins / s.tradeCount) * 100).toFixed(1)),
+      }))
+      .sort((a, b) => b.totalPnL - a.totalPnL);
 
     res.json(result);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to compute strategy performance" });
+    res.status(500).json({ message: "Failed to compute strategy performance" });
   }
 });
 

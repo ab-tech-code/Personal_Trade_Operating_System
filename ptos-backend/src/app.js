@@ -9,6 +9,7 @@ const userRoutes = require("./routes/user.routes");
 const tradeRoutes = require("./routes/trade.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const exchangeRoutes = require("./routes/exchange.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 
 
@@ -22,6 +23,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/trades", tradeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/exchanges", exchangeRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 
 module.exports = app;
