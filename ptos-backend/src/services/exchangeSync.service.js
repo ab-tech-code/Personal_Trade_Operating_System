@@ -1,79 +1,34 @@
-const ccxt = require("ccxt");
 const Trade = require("../models/Trade");
-const { getAdapter } = require("../adapters");
-const ExchangeSyncJob = require("../models/ExchangeSyncJob");
+const MockBinanceAdapter = require("../exchanges/MockBinanceAdapter");
 
-/**
- * Fetch trades from Binance via CCXT
- */
-const fetchBinanceTrades = async (connection) => {
-  const exchange = new ccxt.binance({
-    apiKey: connection.getDecryptedKey(),
-    secret: connection.getDecryptedSecret(),
-    enableRateLimit: true,
-  });
+const syncExchangeTrades = async (user, credentials) => {
+  const adapter = new MockBinanceAdapter(credentials);
 
-  await exchange.loadMarkets();
-  const trades = await exchange.fetchMyTrades();
-  return trades;
-};
+  await adapter.connect();
+  const rawTrades = await adapter.fetchTrades();
 
-/**
- * Import Trades Engine
- */
-const importTrades = async (exchangeName, trades, userId) => {
-  const normalize = getAdapter(exchangeName);
-  if (!normalize) throw new Error("No adapter found");
+  for (const raw of rawTrades) {
+    const tradeData = adapter.normalizeTrade(raw);
 
-  for (const rawTrade of trades) {
-    const normalizedTrade = normalize(rawTrade, userId);
+    // 🚨 Safety check
+    if (!tradeData.externalTradeId || !tradeData.exchange) {
+      console.warn("Skipped trade without external identity");
+      continue;
+    }
 
-    const exists = await Trade.findOne({
-      user: userId,
-      externalTradeId: normalizedTrade.externalTradeId,
-      exchange: exchangeName,
-    });
-
-    if (!exists) {
-      await Trade.create(normalizedTrade);
+    try {
+      await Trade.create({
+        ...tradeData,
+        user: user._id,
+        source: "exchange",
+      });
+    } catch (err) {
+      if (err.code !== 11000) {
+        throw err;
+      }
+      // duplicate → ignore
     }
   }
 };
 
-/**
- * runExchangeSync
- */
-const runExchangeSync = async (jobId) => {
-  const job = await ExchangeSyncJob.findById(jobId).populate("exchangeConnection");
-  if (!job) return;
-
-  try {
-    job.status = "running";
-    job.startedAt = new Date();
-    await job.save();
-
-    let rawTrades = [];
-    if (job.exchangeConnection.exchangeName === "binance") {
-      rawTrades = await fetchBinanceTrades(job.exchangeConnection);
-    }
-
-    await importTrades(
-      job.exchangeConnection.exchangeName,
-      rawTrades,
-      job.user
-    );
-
-    job.status = "completed";
-    job.finishedAt = new Date();
-    await job.save();
-  } catch (error) {
-    job.status = "failed";
-    job.error = error.message;
-    job.finishedAt = new Date();
-    await job.save();
-  }
-};
-
-module.exports = {
-  runExchangeSync,
-};
+module.exports = { syncExchangeTrades };

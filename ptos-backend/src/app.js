@@ -10,6 +10,7 @@ const tradeRoutes = require("./routes/trade.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const exchangeRoutes = require("./routes/exchange.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
+const settingsRoutes = require("./routes/settings.routes");
 
 
 
@@ -24,6 +25,7 @@ app.use("/api/trades", tradeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/settings", settingsRoutes);
 
 
 module.exports = app;

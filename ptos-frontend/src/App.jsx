@@ -12,6 +12,7 @@ import Trades from "./pages/Trades";
 import AddTrade from "./pages/AddTrade";
 import Analytics from "./pages/Analytics";
 import Exchanges from "./pages/Exchanges";
+import Settings from "./pages/Settings";
 
 
 const App = () => {
@@ -62,6 +63,15 @@ const App = () => {
           element={
             <ProtectedRoute>
               <Exchanges />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/app/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

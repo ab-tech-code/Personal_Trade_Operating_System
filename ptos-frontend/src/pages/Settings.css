@@ -1,0 +1,34 @@
+.settings-container {
+  max-width: 800px;
+  margin: auto;
+}
+
+.settings-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.settings-section label {
+  display: block;
+  margin-bottom: 15px;
+}
+
+.settings-section input,
+.settings-section select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.success {
+  margin-top: 10px;
+  color: #1f8f5f;
+}
