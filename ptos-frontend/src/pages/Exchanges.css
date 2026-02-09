@@ -1,6 +1,6 @@
 .exchange-container {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 800px;
+  margin: auto;
 }
 
 .exchange-subtitle {
@@ -10,32 +10,21 @@
 
 .exchange-card {
   background: #fff;
-  border-radius: 8px;
   padding: 20px;
+  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.exchange-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.exchange-card label {
+  display: block;
   margin-bottom: 15px;
 }
 
-.exchange-status {
-  font-size: 0.85rem;
-  padding: 4px 10px;
-  border-radius: 12px;
-}
-
-.exchange-status.connected {
-  background: #e6f7ee;
-  color: #1f8f5f;
-}
-
-.sync-btn {
+.exchange-card input,
+.exchange-card select {
   width: 100%;
-  margin-top: 10px;
+  padding: 8px;
+  margin-top: 5px;
 }
 
 .success-msg {
@@ -48,14 +37,8 @@
   color: #d64545;
 }
 
-.last-sync {
-  margin-top: 10px;
-  font-size: 0.85rem;
-  color: #555;
-}
-
 .exchange-note {
-  margin-top: 30px;
+  margin-top: 20px;
   font-size: 0.85rem;
   color: #777;
 }

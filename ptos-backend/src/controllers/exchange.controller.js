@@ -1,121 +1,112 @@
-const ExchangeConnection = require("../models/ExchangeConnection");
+const ccxt = require("ccxt");
+const Exchange = require("../models/Exchange");
+const { encrypt, decrypt } = require("../utils/encryption");
 
 /**
- * Add Exchange Connection
+ * CONNECT EXCHANGE
+ * Stores API keys only.
+ * Does NOT verify credentials.
  */
-const addExchange = async (req, res) => {
-  try {
-    const { exchangeName, apiKey, apiSecret, label } = req.body;
+exports.connectExchange = async (req, res) => {
+  const userId = req.user.id;
+  const { exchange, apiKey, apiSecret, apiPassword } = req.body;
 
-    if (!exchangeName || !apiKey || !apiSecret) {
-      return res.status(400).json({
-        message: "Exchange name and keys are required",
-      });
-    }
-
-    const connection = await ExchangeConnection.create({
-      user: req.user._id,
-      exchangeName,
-      apiKey,
-      apiSecret,
-      label,
-    });
-
-    res.status(201).json({
-      message: "Exchange connected",
-      connection,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to add exchange",
-    });
+  if (!exchange || !apiKey || !apiSecret) {
+    return res.status(400).json({ message: "Missing required fields" });
   }
+
+  const saved = await Exchange.findOneAndUpdate(
+    { user: userId, exchange },
+    {
+      user: userId,
+      exchange,
+      apiKey: encrypt(apiKey),
+      apiSecret: encrypt(apiSecret),
+      apiPassword: apiPassword ? encrypt(apiPassword) : undefined,
+      status: "CONNECTED_UNVERIFIED",
+      lastSyncAt: null,
+    },
+    { upsert: true, new: true }
+  );
+
+  res.json({
+    message:
+      "Exchange saved. Click 'Sync Now' to verify API access.",
+    exchange: {
+      id: saved._id,
+      exchange: saved.exchange,
+      status: saved.status,
+    },
+  });
 };
 
 /**
- * Get User Exchanges
+ * GET USER EXCHANGES
  */
-const getUserExchanges = async (req, res) => {
-  try {
-    const exchanges = await ExchangeConnection.find({
-      user: req.user._id,
-    })
-      .select("-apiKey -apiSecret")
-      .sort({ createdAt: -1 });
+exports.getExchanges = async (req, res) => {
+  const exchanges = await Exchange.find({ user: req.user.id }).select(
+    "-apiKey -apiSecret -apiPassword"
+  );
 
-    res.json(exchanges);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch exchanges",
-    });
-  }
+  res.json(exchanges);
 };
-
 
 /**
- * Delete Exchange Connection
+ * SYNC / VERIFY EXCHANGE
+ * This is where REAL AUTH happens.
  */
-const deleteExchange = async (req, res) => {
+exports.syncExchange = async (req, res) => {
+  const userId = req.user.id;
+  const exchangeId = req.params.id;
+
+  const exchangeConfig = await Exchange.findOne({
+    _id: exchangeId,
+    user: userId,
+  });
+
+  if (!exchangeConfig) {
+    return res.status(404).json({ message: "Exchange not found" });
+  }
+
   try {
-    const connection = await ExchangeConnection.findById(req.params.id);
+    const ExchangeClass = ccxt[exchangeConfig.exchange];
 
-    if (!connection) {
-      return res.status(404).json({
-        message: "Connection not found",
-      });
+    if (!ExchangeClass) {
+      throw new Error("Unsupported exchange");
     }
 
-    if (connection.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        message: "Not authorized",
-      });
-    }
+    const exchange = new ExchangeClass({
+      apiKey: decrypt(exchangeConfig.apiKey),
+      secret: decrypt(exchangeConfig.apiSecret),
+      password: exchangeConfig.apiPassword
+        ? decrypt(exchangeConfig.apiPassword)
+        : undefined,
+      enableRateLimit: true,
+    });
 
-    await connection.deleteOne();
+    /**
+     * 🔥 REAL AUTH CHECK
+     * If this fails → keys are invalid
+     */
+    await exchange.fetchMyTrades(undefined, undefined, 1);
 
-    res.json({ message: "Exchange removed" });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to delete exchange",
+    exchangeConfig.status = "VERIFIED";
+    exchangeConfig.lastSyncAt = new Date();
+    await exchangeConfig.save();
+
+    return res.json({
+      message: "Exchange verified successfully",
+      status: exchangeConfig.status,
+      lastSyncAt: exchangeConfig.lastSyncAt,
+    });
+  } catch (err) {
+    exchangeConfig.status = "AUTH_FAILED";
+    await exchangeConfig.save();
+
+    return res.status(401).json({
+      message:
+        "API authentication failed. Check API keys & permissions.",
+      status: exchangeConfig.status,
     });
   }
-};
-
-const ExchangeSyncJob = require("../models/ExchangeSyncJob");
-
-/**
- * Trigger Exchange Sync
- */
-const triggerExchangeSync = async (req, res) => {
-  try {
-    const connection = await ExchangeConnection.findById(req.params.id);
-
-    if (!connection) {
-      return res.status(404).json({ message: "Exchange not found" });
-    }
-
-    if (connection.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    const job = await ExchangeSyncJob.create({
-      user: req.user._id,
-      exchangeConnection: connection._id,
-    });
-
-    res.json({
-      message: "Sync started",
-      jobId: job._id,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to start sync" });
-  }
-};
-
-
-module.exports = {
-  addExchange,
-  getUserExchanges,
-  deleteExchange,
-  triggerExchangeSync,
 };

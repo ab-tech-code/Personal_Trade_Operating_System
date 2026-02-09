@@ -1,34 +1,44 @@
-const Trade = require("../models/Trade");
-const MockBinanceAdapter = require("../exchanges/MockBinanceAdapter");
+const Settings = require("../models/Settings");
+const { createExchangeInstance } = require("../exchanges/registry");
 
-const syncExchangeTrades = async (user, credentials) => {
-  const adapter = new MockBinanceAdapter(credentials);
+const syncExchange = async (userId, exchangeName) => {
+  const settings = await Settings.findOne({ user: userId });
 
-  await adapter.connect();
-  const rawTrades = await adapter.fetchTrades();
+  const exchangeConfig = settings.exchanges.find(
+    (e) => e.name === exchangeName
+  );
 
-  for (const raw of rawTrades) {
-    const tradeData = adapter.normalizeTrade(raw);
-
-    // 🚨 Safety check
-    if (!tradeData.externalTradeId || !tradeData.exchange) {
-      console.warn("Skipped trade without external identity");
-      continue;
-    }
-
-    try {
-      await Trade.create({
-        ...tradeData,
-        user: user._id,
-        source: "exchange",
-      });
-    } catch (err) {
-      if (err.code !== 11000) {
-        throw err;
-      }
-      // duplicate → ignore
-    }
+  if (!exchangeConfig) {
+    throw new Error("Exchange not configured");
   }
+
+  const exchange = createExchangeInstance({
+    exchange: exchangeName,
+    apiKey: exchangeConfig.apiKey,
+    apiSecret: exchangeConfig.apiSecret,
+    password: exchangeConfig.apiPassword,
+  });
+
+  try {
+    await exchange.loadMarkets();
+
+    // This MUST work or auth is invalid
+    const trades = await exchange.fetchMyTrades(undefined, undefined, 1);
+
+    // Mark verified
+    exchangeConfig.status = "VERIFIED";
+    exchangeConfig.lastSyncAt = new Date();
+  } catch (err) {
+    exchangeConfig.status = "AUTH_FAILED";
+    await settings.save();
+
+    throw new Error(
+      "API authentication failed during sync. Check API keys & permissions."
+    );
+  }
+
+  await settings.save();
+  return true;
 };
 
-module.exports = { syncExchangeTrades };
+module.exports = { syncExchange };

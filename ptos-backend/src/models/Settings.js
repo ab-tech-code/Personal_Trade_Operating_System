@@ -2,21 +2,19 @@ const mongoose = require("mongoose");
 
 const exchangeSchema = new mongoose.Schema({
   name: {
-    type: String, // binance, bybit, okx
+    type: String, // bybit, binance, etc.
     required: true,
   },
-  apiKey: {
-    type: String,
-  },
-  apiSecret: {
-    type: String,
-  },
+  apiKey: String,
+  apiSecret: String,
+  apiPassword: String, // 🔥 optional (for exchanges that need it)
   connected: {
     type: Boolean,
     default: false,
   },
   lastSyncAt: Date,
 });
+
 
 const settingsSchema = new mongoose.Schema(
   {

@@ -1,127 +1,187 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import AppLayout from "../layouts/AppLayout";
-import ConnectExchangeModal from "../components/ConnectExchangeModal";
-import { fetchExchanges, syncExchange } from "../services/exchange.service";
-
-const AVAILABLE_EXCHANGES = ["Binance", "Bybit"];
+import {
+  connectExchange,
+  fetchExchanges,
+  syncExchange,
+} from "../services/exchange.service";
+import "./Exchanges.css";
 
 const Exchanges = () => {
-  const [activeExchange, setActiveExchange] = useState(null);
-  const [connections, setConnections] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const pollingRef = useRef(null);
+  const [exchange, setExchange] = useState("bybit");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [apiPassword, setApiPassword] = useState("");
+
+  const [exchanges, setExchanges] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [syncingId, setSyncingId] = useState(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const loadExchanges = async () => {
     try {
       const data = await fetchExchanges();
-      setConnections(data);
-      
-      // If any connection is currently "syncing", we should keep polling
-      const isSyncing = data.some(conn => conn.status === "syncing");
-      if (!isSyncing && pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
+      setExchanges(data);
     } catch (err) {
-      console.error("Failed to load connections:", err);
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    loadExchanges();
+  }, []);
+
+  const handleConnect = async () => {
+    setLoading(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await connectExchange({
+        exchange,
+        apiKey,
+        apiSecret,
+        apiPassword: apiPassword || undefined,
+      });
+
+      setMessage(
+        `${exchange.toUpperCase()} saved. Click "Sync Now" to verify API access.`
+      );
+
+      setApiKey("");
+      setApiSecret("");
+      setApiPassword("");
+      loadExchanges();
+    } catch (err) {
+      setError(err.message || "Failed to connect exchange");
     } finally {
       setLoading(false);
     }
   };
 
-  // Poll for status updates if something is syncing
-  useEffect(() => {
-    loadExchanges();
+  const handleSync = async (id) => {
+    setSyncingId(id);
+    setMessage("");
+    setError("");
 
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
-
-  const startPolling = () => {
-    if (!pollingRef.current) {
-      pollingRef.current = setInterval(loadExchanges, 5000); // Check every 5s
+    try {
+      await syncExchange(id);
+      setMessage("Exchange verified and synced successfully.");
+      loadExchanges();
+    } catch (err) {
+      setError(err.message || "Sync failed. Check API keys & permissions.");
+    } finally {
+      setSyncingId(null);
     }
   };
 
-  const handleSync = async (id) => {
-    try {
-      await syncExchange(id);
-      loadExchanges();
-      startPolling(); // Start polling to watch for the status change
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to start sync");
+  const renderStatus = (status) => {
+    switch (status) {
+      case "VERIFIED":
+        return <span className="status verified">Verified</span>;
+      case "AUTH_FAILED":
+        return <span className="status failed">Auth Failed</span>;
+      default:
+        return <span className="status pending">Unverified</span>;
     }
   };
 
   return (
     <AppLayout>
-      <div className="page-header">
-        <h1>Exchange Connections</h1>
-        
-        {/* UPDATED: Dynamic selection for new connections */}
-        <div className="add-connection-actions">
-          {AVAILABLE_EXCHANGES.map((ex) => (
-            <button 
-              key={ex}
-              className="btn-primary" 
-              onClick={() => setActiveExchange(ex)}
-              style={{ marginRight: "10px" }}
-            >
-              + Connect {ex}
-            </button>
-          ))}
-        </div>
-      </div>
+      <div className="exchange-container">
+        <h1>Exchanges</h1>
 
-      <div className="exchange-list">
-        {connections.length === 0 && !loading && (
-          <p className="empty-state">No exchanges connected yet. Use the buttons above to get started.</p>
+        <p className="exchange-subtitle">
+          Connect your exchange using <strong>read-only</strong> API keys.
+        </p>
+
+        {/* CONNECT FORM */}
+        <div className="exchange-card">
+          <label>
+            Exchange
+            <select
+              value={exchange}
+              onChange={(e) => setExchange(e.target.value)}
+            >
+              <option value="bybit">Bybit</option>
+              <option value="binance">Binance</option>
+              <option value="blofin">Blofin</option>
+              <option value="bitunix">Bitunix</option>
+            </select>
+          </label>
+
+          <label>
+            API Key
+            <input
+              type="text"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </label>
+
+          <label>
+            API Secret
+            <input
+              type="password"
+              value={apiSecret}
+              onChange={(e) => setApiSecret(e.target.value)}
+            />
+          </label>
+
+          <label>
+            API Passphrase (optional)
+            <input
+              type="password"
+              value={apiPassword}
+              onChange={(e) => setApiPassword(e.target.value)}
+            />
+          </label>
+
+          <button className="btn" onClick={handleConnect} disabled={loading}>
+            {loading ? "Saving..." : "Connect Exchange"}
+          </button>
+
+          {message && <p className="success-msg">{message}</p>}
+          {error && <p className="error-msg">{error}</p>}
+        </div>
+
+        {/* CONNECTED EXCHANGES */}
+        <h2>Connected Exchanges</h2>
+
+        {exchanges.length === 0 ? (
+          <p>No exchanges connected yet.</p>
+        ) : (
+          <div className="exchange-list">
+            {exchanges.map((ex) => (
+              <div key={ex._id} className="exchange-row">
+                <div>
+                  <strong>{ex.exchange.toUpperCase()}</strong>
+                  <div>{renderStatus(ex.status)}</div>
+                  {ex.lastSyncAt && (
+                    <small>
+                      Last sync:{" "}
+                      {new Date(ex.lastSyncAt).toLocaleString()}
+                    </small>
+                  )}
+                </div>
+
+                <button
+                  className="btn-outline"
+                  onClick={() => handleSync(ex._id)}
+                  disabled={syncingId === ex._id}
+                >
+                  {syncingId === ex._id ? "Syncing..." : "Sync Now"}
+                </button>
+              </div>
+            ))}
+          </div>
         )}
 
-        {connections.map((conn) => (
-          <div className={`exchange-card ${conn.status}`} key={conn._id}>
-            <div className="card-header">
-              <h3>{conn.exchange}</h3>
-              <span className={`status-badge ${conn.status}`}>{conn.status}</span>
-            </div>
-
-            <div className="card-actions">
-              {conn.status === "connected" && (
-                <button 
-                  className="btn-sync" 
-                  onClick={() => handleSync(conn._id)}
-                >
-                  Sync Now
-                </button>
-              )}
-
-              {conn.status === "syncing" && (
-                <div className="syncing-indicator">
-                  <div className="spinner"></div>
-                  <p>Syncing trades...</p>
-                </div>
-              )}
-
-              {/* Show "Update" button if they want to change keys */}
-              <button 
-                className="btn-text" 
-                onClick={() => setActiveExchange(conn.exchange)}
-              >
-                Update Keys
-              </button>
-            </div>
-          </div>
-        ))}
+        <div className="exchange-note">
+          🔐 PTOS never places trades. Read-only access only.
+        </div>
       </div>
-
-      {activeExchange && (
-        <ConnectExchangeModal
-          exchange={activeExchange}
-          onClose={() => setActiveExchange(null)}
-          onSuccess={loadExchanges}
-        />
-      )}
     </AppLayout>
   );
 };
