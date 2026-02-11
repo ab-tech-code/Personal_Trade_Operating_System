@@ -22,8 +22,10 @@ const Dashboard = () => {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const summaryData = await fetchDashboardSummary();
-        const tradesData = await fetchRecentTrades();
+        const [summaryData, tradesData] = await Promise.all([
+          fetchDashboardSummary(),
+          fetchRecentTrades(),
+        ]);
 
         setSummary(summaryData);
         setRecentTrades(tradesData);
@@ -61,6 +63,18 @@ const Dashboard = () => {
     );
   }
 
+  const formattedPnL =
+    summary?.totalPnL >= 0
+      ? `+$${Number(summary.totalPnL).toFixed(2)}`
+      : `-$${Math.abs(summary.totalPnL).toFixed(2)}`;
+
+  const formattedWinRate = `${Number(summary?.winRate || 0).toFixed(1)}%`;
+
+  const lastActivity =
+    recentTrades.length > 0 && recentTrades[0].closedAt
+      ? new Date(recentTrades[0].closedAt).toLocaleDateString()
+      : "—";
+
   return (
     <AppLayout>
       <div className="container">
@@ -69,25 +83,19 @@ const Dashboard = () => {
         <div className="stats-grid">
           <StatCard
             label="Total PnL"
-            value={`$${summary.totalPnL}`}
+            value={formattedPnL}
           />
           <StatCard
             label="Win Rate"
-            value={`${summary.winRate}%`}
+            value={formattedWinRate}
           />
           <StatCard
-            label="Trades"
-            value={summary.totalTrades}
+            label="Total Trades"
+            value={summary?.totalTrades || 0}
           />
           <StatCard
             label="Last Activity"
-            value={
-              recentTrades.length > 0
-                ? new Date(
-                    recentTrades[0].closedAt
-                  ).toLocaleDateString()
-                : "—"
-            }
+            value={lastActivity}
           />
         </div>
 
