@@ -55,58 +55,25 @@ exports.getExchanges = async (req, res) => {
  * SYNC / VERIFY EXCHANGE
  * This is where REAL AUTH happens.
  */
+const { syncExchangeTrades } = require(
+  "../services/exchangeTradeSync.service"
+);
+
 exports.syncExchange = async (req, res) => {
-  const userId = req.user.id;
-  const exchangeId = req.params.id;
-
-  const exchangeConfig = await Exchange.findOne({
-    _id: exchangeId,
-    user: userId,
-  });
-
-  if (!exchangeConfig) {
-    return res.status(404).json({ message: "Exchange not found" });
-  }
-
   try {
-    const ExchangeClass = ccxt[exchangeConfig.exchange];
+    const result = await syncExchangeTrades(
+      req.user.id,
+      req.params.id
+    );
 
-    if (!ExchangeClass) {
-      throw new Error("Unsupported exchange");
-    }
-
-    const exchange = new ExchangeClass({
-      apiKey: decrypt(exchangeConfig.apiKey),
-      secret: decrypt(exchangeConfig.apiSecret),
-      password: exchangeConfig.apiPassword
-        ? decrypt(exchangeConfig.apiPassword)
-        : undefined,
-      enableRateLimit: true,
-    });
-
-    /**
-     * 🔥 REAL AUTH CHECK
-     * If this fails → keys are invalid
-     */
-    await exchange.fetchMyTrades(undefined, undefined, 1);
-
-    exchangeConfig.status = "VERIFIED";
-    exchangeConfig.lastSyncAt = new Date();
-    await exchangeConfig.save();
-
-    return res.json({
-      message: "Exchange verified successfully",
-      status: exchangeConfig.status,
-      lastSyncAt: exchangeConfig.lastSyncAt,
+    res.json({
+      message: "Exchange trades synced successfully",
+      ...result,
     });
   } catch (err) {
-    exchangeConfig.status = "AUTH_FAILED";
-    await exchangeConfig.save();
-
-    return res.status(401).json({
-      message:
-        "API authentication failed. Check API keys & permissions.",
-      status: exchangeConfig.status,
+    res.status(400).json({
+      message: err.message || "Exchange sync failed",
     });
   }
 };
+

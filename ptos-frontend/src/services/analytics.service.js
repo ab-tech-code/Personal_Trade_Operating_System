@@ -1,21 +1,11 @@
 import { apiRequest } from "./api";
 
 /**
- * Fetch equity curve data
+ * Fetch dashboard summary stats
  */
-export const fetchEquityCurve = async () => {
-  return apiRequest("/analytics/equity-curve");
+export const fetchDashboardSummary = async () => {
+  return apiRequest("/analytics/summary");
 };
-
-
-
-/**
- * Fetch win/loss distribution
- */
-export const fetchWinLoss = async () => {
-  return apiRequest("/analytics/win-loss");
-};
-
 
 /**
  * Fetch monthly performance
@@ -29,4 +19,11 @@ export const fetchMonthlyPerformance = async () => {
  */
 export const fetchStrategyPerformance = async () => {
   return apiRequest("/analytics/strategy-performance");
+};
+
+/**
+ * Fetch symbol performance
+ */
+export const fetchSymbolPerformance = async () => {
+  return apiRequest("/analytics/symbol-performance");
 };

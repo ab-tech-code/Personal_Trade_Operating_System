@@ -1,6 +1,4 @@
-import React from "react";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import { createTrade } from "../services/trades.service";
@@ -10,25 +8,25 @@ const AddTrade = () => {
 
   const [form, setForm] = useState({
     symbol: "",
-    side: "long",
-    entryPrice: "",
+    side: "buy",
     quantity: "",
-    pnl: "",
-    notes: "",
+    entryPrice: "",
+    exitPrice: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.symbol || !form.entryPrice || !form.quantity) {
-      setError("Symbol, entry price and quantity are required.");
+    if (!form.symbol || !form.quantity || !form.entryPrice) {
+      setError("Symbol, quantity, and entry price are required.");
       return;
     }
 
@@ -36,13 +34,16 @@ const AddTrade = () => {
 
     try {
       await createTrade({
-        ...form,
-        source: "manual",
+        symbol: form.symbol.toUpperCase(),
+        side: form.side.toLowerCase(),
+        quantity: Number(form.quantity),
+        entryPrice: Number(form.entryPrice),
+        exitPrice: form.exitPrice ? Number(form.exitPrice) : undefined,
       });
 
       navigate("/app/trades");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to create trade");
     } finally {
       setLoading(false);
     }
@@ -50,50 +51,58 @@ const AddTrade = () => {
 
   return (
     <AppLayout>
-      <h1>Add Trade</h1>
+      <div className="container">
+        <h1>Add Manual Trade</h1>
 
-      <form className="auth-form" onSubmit={handleSubmit}>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <form className="auth-form" onSubmit={handleSubmit}>
+          {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <label>Symbol</label>
-        <input name="symbol" value={form.symbol} onChange={handleChange} />
+          <label>Symbol</label>
+          <input
+            name="symbol"
+            placeholder="BTCUSDT"
+            value={form.symbol}
+            onChange={handleChange}
+          />
 
-        <label>Side</label>
-        <select name="side" value={form.side} onChange={handleChange}>
-          <option value="long">Long</option>
-          <option value="short">Short</option>
-        </select>
+          <label>Side</label>
+          <select name="side" value={form.side} onChange={handleChange}>
+            <option value="buy">Buy (Long)</option>
+            <option value="sell">Sell (Short)</option>
+          </select>
 
-        <label>Entry Price</label>
-        <input
-          name="entryPrice"
-          type="number"
-          value={form.entryPrice}
-          onChange={handleChange}
-        />
+          <label>Quantity</label>
+          <input
+            name="quantity"
+            type="number"
+            step="any"
+            value={form.quantity}
+            onChange={handleChange}
+          />
 
-        <label>Quantity</label>
-        <input
-          name="quantity"
-          type="number"
-          value={form.quantity}
-          onChange={handleChange}
-        />
+          <label>Entry Price</label>
+          <input
+            name="entryPrice"
+            type="number"
+            step="any"
+            value={form.entryPrice}
+            onChange={handleChange}
+          />
 
-        <label>PnL (optional)</label>
-        <input name="pnl" type="number" value={form.pnl} onChange={handleChange} />
+          <label>Exit Price (optional)</label>
+          <input
+            name="exitPrice"
+            type="number"
+            step="any"
+            value={form.exitPrice}
+            onChange={handleChange}
+          />
 
-        <label>Notes (optional)</label>
-        <textarea
-          name="notes"
-          value={form.notes}
-          onChange={handleChange}
-        />
-
-        <button className="btn" disabled={loading}>
-          {loading ? "Saving..." : "Save Trade"}
-        </button>
-      </form>
+          <button className="btn" disabled={loading}>
+            {loading ? "Saving..." : "Save Trade"}
+          </button>
+        </form>
+      </div>
     </AppLayout>
   );
 };

@@ -1,22 +1,11 @@
 const express = require("express");
-const protect = require("../middleware/auth.middleware");
-
-const {
-  createTrade,
-  getTrades,
-  updateTrade,
-  deleteTrade,
-} = require("../controllers/trade.controller");
-
 const router = express.Router();
+const auth = require("../middleware/auth.middleware");
+const tradeCtrl = require("../controllers/trade.controller");
 
-router.post("/", protect, createTrade);
-router.get("/", protect, getTrades);
-
-// Update trade
-router.put("/:id", protect, updateTrade);
-
-// Delete trade
-router.delete("/:id", protect, deleteTrade);
+router.post("/manual", auth, tradeCtrl.createManualTrade);
+router.get("/", auth, tradeCtrl.getTrades);
+router.put("/:id", auth, tradeCtrl.updateTrade);
+router.delete("/:id", auth, tradeCtrl.deleteTrade);
 
 module.exports = router;

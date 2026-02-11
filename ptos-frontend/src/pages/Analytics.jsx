@@ -5,12 +5,20 @@ import EquityCurveChart from "../components/EquityCurveChart";
 import WinLossChart from "../components/WinLossChart";
 import MonthlyPerformanceChart from "../components/MonthlyPerformanceChart";
 import StrategyPerformanceChart from "../components/StrategyPerformanceChart"; // New Import
+//import { 
+//  fetchEquityCurve, 
+//  fetchWinLoss, 
+//  fetchMonthlyPerformance,
+//  fetchStrategyPerformance // New Import
+//} from "../services/analytics.service";
 import { 
-  fetchEquityCurve, 
-  fetchWinLoss, 
+  fetchDashboardSummary,
   fetchMonthlyPerformance,
-  fetchStrategyPerformance // New Import
+  fetchStrategyPerformance,
+  fetchSymbolPerformance
 } from "../services/analytics.service";
+
+
 import Loading from "../components/Loading";
 
 const Analytics = () => {
