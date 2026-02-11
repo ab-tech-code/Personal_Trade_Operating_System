@@ -1,40 +1,73 @@
+const mongoose = require("mongoose");
 const Trade = require("../models/Trade");
 
-const CLOSED = "closed";
+const CLOSED = "CLOSED";
 
 /**
- * DASHBOARD SUMMARY
+ * DASHBOARD SUMMARY (AGGREGATED — SCALABLE)
  */
 exports.getDashboardSummary = async (userId) => {
-  const trades = await Trade.find({
-    user: userId,
-    status: CLOSED,
-  }).sort({ closedAt: -1 });
+  const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  const totalTrades = trades.length;
+  const result = await Trade.aggregate([
+    {
+      $match: {
+        user: userObjectId,
+        status: CLOSED,
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalTrades: { $sum: 1 },
+        totalPnL: { $sum: "$pnl" },
+        wins: {
+          $sum: { $cond: [{ $gt: ["$pnl", 0] }, 1, 0] },
+        },
+        losses: {
+          $sum: { $cond: [{ $lte: ["$pnl", 0] }, 1, 0] },
+        },
+        lastActivity: { $max: "$closedAt" },
+      },
+    },
+  ]);
 
-  let totalPnL = 0;
-  let wins = 0;
-  let losses = 0;
+  if (!result.length) {
+    return {
+      totalTrades: 0,
+      totalPnL: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      lastActivity: null,
+    };
+  }
 
-  trades.forEach((t) => {
-    totalPnL += t.pnl || 0;
-    if (t.pnl > 0) wins++;
-    else losses++;
-  });
+  const data = result[0];
 
   return {
-    totalTrades,
-    totalPnL: Number(totalPnL.toFixed(2)),
-    wins,
-    losses,
+    totalTrades: data.totalTrades,
+    totalPnL: Number(data.totalPnL.toFixed(2)),
+    wins: data.wins,
+    losses: data.losses,
     winRate:
-      totalTrades === 0
+      data.totalTrades === 0
         ? 0
-        : Number(((wins / totalTrades) * 100).toFixed(2)),
-    recentTrades: trades.slice(0, 5),
-    lastActivity: trades[0]?.closedAt || null,
+        : Number(((data.wins / data.totalTrades) * 100).toFixed(2)),
+    lastActivity: data.lastActivity,
   };
+};
+
+/**
+ * RECENT TRADES (Last 5 closed)
+ */
+exports.getRecentTrades = async (userId) => {
+  return Trade.find({
+    user: userId,
+    status: CLOSED,
+  })
+    .sort({ closedAt: -1 })
+    .limit(5);
 };
 
 /**
@@ -42,7 +75,12 @@ exports.getDashboardSummary = async (userId) => {
  */
 exports.getStrategyAnalytics = async (userId) => {
   return Trade.aggregate([
-    { $match: { user: userId, status: CLOSED } },
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(userId),
+        status: CLOSED,
+      },
+    },
     {
       $group: {
         _id: "$strategy",
@@ -62,7 +100,12 @@ exports.getStrategyAnalytics = async (userId) => {
  */
 exports.getSymbolAnalytics = async (userId) => {
   return Trade.aggregate([
-    { $match: { user: userId, status: CLOSED } },
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(userId),
+        status: CLOSED,
+      },
+    },
     {
       $group: {
         _id: "$symbol",
@@ -81,7 +124,7 @@ exports.getMonthlyAnalytics = async (userId) => {
   return Trade.aggregate([
     {
       $match: {
-        user: userId,
+        user: new mongoose.Types.ObjectId(userId),
         status: CLOSED,
         closedAt: { $ne: null },
       },

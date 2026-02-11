@@ -1,50 +1,37 @@
 import React, { useEffect, useState } from "react";
 import AppLayout from "../layouts/AppLayout";
-import ChartPlaceholder from "../components/ChartPlaceholder";
-import EquityCurveChart from "../components/EquityCurveChart";
-import WinLossChart from "../components/WinLossChart";
+import Loading from "../components/Loading";
 import MonthlyPerformanceChart from "../components/MonthlyPerformanceChart";
-import StrategyPerformanceChart from "../components/StrategyPerformanceChart"; // New Import
-//import { 
-//  fetchEquityCurve, 
-//  fetchWinLoss, 
-//  fetchMonthlyPerformance,
-//  fetchStrategyPerformance // New Import
-//} from "../services/analytics.service";
-import { 
+import StrategyPerformanceChart from "../components/StrategyPerformanceChart";
+import WinLossChart from "../components/WinLossChart";
+
+import {
   fetchDashboardSummary,
   fetchMonthlyPerformance,
   fetchStrategyPerformance,
-  fetchSymbolPerformance
 } from "../services/analytics.service";
 
-
-import Loading from "../components/Loading";
-
 const Analytics = () => {
-  const [equityCurve, setEquityCurve] = useState([]);
-  const [winLoss, setWinLoss] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [monthlyPerformance, setMonthlyPerformance] = useState([]);
-  const [strategyPerformance, setStrategyPerformance] = useState([]); // New State
+  const [strategyPerformance, setStrategyPerformance] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Fetch all four datasets simultaneously
-        const [equityData, winLossData, monthlyData, strategyData] = await Promise.all([
-          fetchEquityCurve(),
-          fetchWinLoss(),
-          fetchMonthlyPerformance(),
-          fetchStrategyPerformance(), // New fetch call
-        ]);
-        
-        setEquityCurve(equityData);
-        setWinLoss(winLossData);
+        const [summaryData, monthlyData, strategyData] =
+          await Promise.all([
+            fetchDashboardSummary(),
+            fetchMonthlyPerformance(),
+            fetchStrategyPerformance(),
+          ]);
+
+        setSummary(summaryData);
         setMonthlyPerformance(monthlyData);
-        setStrategyPerformance(strategyData); // New state update
+        setStrategyPerformance(strategyData);
       } catch (err) {
-        console.error("Error loading analytics data:", err.message);
+        console.error("Analytics load failed:", err.message);
       } finally {
         setLoading(false);
       }
@@ -57,55 +44,48 @@ const Analytics = () => {
     <AppLayout>
       <h1>Analytics</h1>
 
-      <div className="analytics-grid">
-        {/* Equity Curve Section */}
-        <div className="chart-placeholder">
-          <h3>Equity Curve</h3>
-          {loading ? (
-            <Loading />
-          ) : equityCurve.length === 0 ? (
-            <p className="empty-state">No trades yet</p>
-          ) : (
-            <EquityCurveChart data={equityCurve} />
-          )}
-        </div>
+      {loading && <Loading />}
 
-        {/* Win / Loss Distribution Section */}
-        <div className="chart-placeholder">
-          <h3>Win / Loss Distribution</h3>
-          {loading ? (
-            <Loading />
-          ) : winLoss.length === 0 ? (
-            <p className="empty-state">No data available</p>
-          ) : (
-            <WinLossChart data={winLoss} />
-          )}
-        </div>
+      {!loading && (
+        <div className="analytics-grid">
+          {/* Win / Loss Distribution */}
+          <div className="chart-placeholder">
+            <h3>Win / Loss Distribution</h3>
+            {!summary || summary.totalTrades === 0 ? (
+              <p className="empty-state">No trades yet</p>
+            ) : (
+              <WinLossChart
+                data={[
+                  { name: "Wins", value: summary.wins },
+                  { name: "Losses", value: summary.losses },
+                ]}
+              />
+            )}
+          </div>
 
-        {/* Monthly Performance Section */}
-        <div className="chart-placeholder">
-          <h3>Monthly Performance</h3>
-          {loading ? (
-            <Loading />
-          ) : monthlyPerformance.length === 0 ? (
-            <p className="empty-state">No data yet</p>
-          ) : (
-            <MonthlyPerformanceChart data={monthlyPerformance} />
-          )}
-        </div>
+          {/* Monthly Performance */}
+          <div className="chart-placeholder">
+            <h3>Monthly Performance</h3>
+            {monthlyPerformance.length === 0 ? (
+              <p className="empty-state">No data yet</p>
+            ) : (
+              <MonthlyPerformanceChart data={monthlyPerformance} />
+            )}
+          </div>
 
-        {/* Strategy Performance Section - Replaced Placeholder */}
-        <div className="chart-placeholder">
-          <h3>Strategy Performance</h3>
-          {loading ? (
-            <Loading />
-          ) : strategyPerformance.length === 0 ? (
-            <p className="empty-state">No strategy data yet</p>
-          ) : (
-            <StrategyPerformanceChart data={strategyPerformance} />
-          )}
+          {/* Strategy Performance */}
+          <div className="chart-placeholder">
+            <h3>Strategy Performance</h3>
+            {strategyPerformance.length === 0 ? (
+              <p className="empty-state">No strategy data yet</p>
+            ) : (
+              <StrategyPerformanceChart
+                data={strategyPerformance}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </AppLayout>
   );
 };

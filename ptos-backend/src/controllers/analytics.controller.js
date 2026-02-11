@@ -35,3 +35,12 @@ exports.getMonthlyAnalytics = async (req, res) => {
     res.status(500).json({ message: "Monthly analytics failed" });
   }
 };
+
+exports.getRecentTrades = async (req, res) => {
+  try {
+    const data = await analyticsService.getRecentTrades(req.user.id);
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "Failed to load recent trades" });
+  }
+};
