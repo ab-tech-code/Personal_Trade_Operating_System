@@ -28,3 +28,10 @@ export const fetchStrategyPerformance = async () => {
 export const fetchSymbolPerformance = async () => {
   return apiRequest("/analytics/symbol-performance");
 };
+
+/**
+ * Equity Curve
+ */
+export const fetchEquityCurve = async () => {
+  return apiRequest("/analytics/equity-curve");
+};

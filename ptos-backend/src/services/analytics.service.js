@@ -142,3 +142,31 @@ exports.getMonthlyAnalytics = async (userId) => {
     { $sort: { "_id.year": 1, "_id.month": 1 } },
   ]);
 };
+
+
+
+/**
+ * EQUITY CURVE (CUMULATIVE PnL)
+ */
+exports.getEquityCurve = async (userId) => {
+  const trades = await Trade.find({
+    user: userId,
+    status: "CLOSED",
+    closedAt: { $ne: null },
+  })
+    .sort({ closedAt: 1 }) // chronological order
+    .select("closedAt pnl");
+
+  let cumulative = 0;
+
+  const curve = trades.map((trade) => {
+    cumulative += trade.pnl || 0;
+
+    return {
+      date: trade.closedAt,
+      equity: Number(cumulative.toFixed(2)),
+    };
+  });
+
+  return curve;
+};

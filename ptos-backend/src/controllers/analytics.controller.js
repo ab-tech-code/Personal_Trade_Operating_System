@@ -44,3 +44,13 @@ exports.getRecentTrades = async (req, res) => {
     res.status(500).json({ message: "Failed to load recent trades" });
   }
 };
+
+
+exports.getEquityCurve = async (req, res) => {
+  try {
+    const data = await analyticsService.getEquityCurve(req.user.id);
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "Equity curve failed" });
+  }
+};
