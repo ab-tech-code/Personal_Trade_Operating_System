@@ -7,17 +7,17 @@ const {
 } = require("./tradeNormalizer.service");
 
 /**
- * Fetch & store trades from exchange
+ * Fetch, verify & store trades from exchange
  */
 exports.syncExchangeTrades = async (userId, exchangeId) => {
+  // 1️⃣ Find exchange WITHOUT status filter
   const exchangeConfig = await Exchange.findOne({
     _id: exchangeId,
     user: userId,
-    status: "VERIFIED",
   });
 
   if (!exchangeConfig) {
-    throw new Error("Exchange not verified");
+    throw new Error("Exchange not found");
   }
 
   const ExchangeClass = ccxt[exchangeConfig.exchange];
@@ -35,7 +35,20 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
     enableRateLimit: true,
   });
 
-  // Fetch recent trades
+  try {
+    // 2️⃣ AUTHENTICATE FIRST (this verifies API keys)
+    await exchange.fetchBalance();
+
+    // If authentication succeeds → mark VERIFIED
+    exchangeConfig.status = "VERIFIED";
+  } catch (err) {
+    // If authentication fails → mark AUTH_FAILED
+    exchangeConfig.status = "AUTH_FAILED";
+    await exchangeConfig.save();
+    throw new Error("Authentication failed");
+  }
+
+  // 3️⃣ Fetch trades AFTER successful auth
   const trades = await exchange.fetchMyTrades();
 
   let inserted = 0;
@@ -51,7 +64,6 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
       await Trade.create(normalized);
       inserted++;
     } catch (err) {
-      // Ignore duplicate trades (unique index)
       if (err.code !== 11000) {
         throw err;
       }

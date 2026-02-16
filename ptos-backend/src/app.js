@@ -11,7 +11,6 @@ const analyticsRoutes = require("./routes/analytics.routes");
 const exchangeRoutes = require("./routes/exchange.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const settingsRoutes = require("./routes/settings.routes");
-const exchangeConnectRoutes = require("./routes/exchangeConnect.routes");
 
 
 
@@ -27,7 +26,6 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api/exchanges", exchangeConnectRoutes);
 
 
 module.exports = app;
