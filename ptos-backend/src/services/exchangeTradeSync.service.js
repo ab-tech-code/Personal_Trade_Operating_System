@@ -10,7 +10,6 @@ const {
  * Fetch, verify & store trades from exchange
  */
 exports.syncExchangeTrades = async (userId, exchangeId) => {
-  // 1️⃣ Find exchange WITHOUT status filter
   const exchangeConfig = await Exchange.findOne({
     _id: exchangeId,
     user: userId,
@@ -26,30 +25,43 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
     throw new Error("Unsupported exchange");
   }
 
-  const exchange = new ExchangeClass({
-    apiKey: decrypt(exchangeConfig.apiKey),
-    secret: decrypt(exchangeConfig.apiSecret),
-    password: exchangeConfig.apiPassword
-      ? decrypt(exchangeConfig.apiPassword)
-      : undefined,
-    enableRateLimit: true,
-  });
+const exchange = new ExchangeClass({
+  apiKey: decrypt(exchangeConfig.apiKey),
+  secret: decrypt(exchangeConfig.apiSecret),
+  password: exchangeConfig.apiPassword
+    ? decrypt(exchangeConfig.apiPassword)
+    : undefined,
+  enableRateLimit: true,
+  options: {
+    defaultType: "future", // important for futures exchanges
+  },
+});
 
-  try {
-    // 2️⃣ AUTHENTICATE FIRST (this verifies API keys)
-    await exchange.fetchBalance();
+try {
+  // Authentication test
+  await exchange.fetchMyTrades(undefined, undefined, 1);
 
-    // If authentication succeeds → mark VERIFIED
-    exchangeConfig.status = "VERIFIED";
-  } catch (err) {
-    // If authentication fails → mark AUTH_FAILED
-    exchangeConfig.status = "AUTH_FAILED";
-    await exchangeConfig.save();
-    throw new Error("Authentication failed");
-  }
+  exchangeConfig.status = "VERIFIED";
+} catch (err) {
+  console.error("Exchange auth error:", err.message);
 
-  // 3️⃣ Fetch trades AFTER successful auth
-  const trades = await exchange.fetchMyTrades();
+  exchangeConfig.status = "AUTH_FAILED";
+  await exchangeConfig.save();
+
+  throw new Error(
+    "Exchange authentication failed: " + err.message
+  );
+}
+
+  // Fetch only new trades
+  const since = exchangeConfig.lastSyncAt
+    ? exchangeConfig.lastSyncAt.getTime()
+    : undefined;
+
+  const trades = await exchange.fetchMyTrades(
+    undefined,
+    since
+  );
 
   let inserted = 0;
 
@@ -60,14 +72,55 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
       trade,
     });
 
-    try {
-      await Trade.create(normalized);
-      inserted++;
-    } catch (err) {
-      if (err.code !== 11000) {
-        throw err;
-      }
+    // Skip if already imported
+    const exists = await Trade.findOne({
+      user: userId,
+      exchange: exchangeConfig.exchange,
+      externalTradeId: normalized.externalTradeId,
+    });
+
+    if (exists) {
+      continue;
     }
+
+    // Try to match opposite OPEN trade
+    const oppositeSide =
+      normalized.side === "buy" ? "sell" : "buy";
+
+    const openTrade = await Trade.findOne({
+      user: userId,
+      symbol: normalized.symbol,
+      source: "exchange",
+      status: "OPEN",
+      side: oppositeSide,
+    }).sort({ openedAt: 1 });
+
+    if (openTrade) {
+      // Calculate PnL
+      const pnl =
+        normalized.side === "sell"
+          ? (normalized.entryPrice -
+              openTrade.entryPrice) *
+            openTrade.quantity
+          : (openTrade.entryPrice -
+              normalized.entryPrice) *
+            openTrade.quantity;
+
+      openTrade.exitPrice = normalized.entryPrice;
+      openTrade.closedAt = new Date(
+        normalized.openedAt
+      );
+      openTrade.pnl =
+        pnl - openTrade.fee - normalized.fee;
+      openTrade.status = "CLOSED";
+
+      await openTrade.save();
+    } else {
+      // Store as OPEN trade
+      await Trade.create(normalized);
+    }
+
+    inserted++;
   }
 
   exchangeConfig.lastSyncAt = new Date();

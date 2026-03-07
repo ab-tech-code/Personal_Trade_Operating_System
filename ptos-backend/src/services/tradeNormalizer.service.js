@@ -1,5 +1,7 @@
 /**
  * Normalize CCXT trade into PTOS Trade format
+ * Exchange trades are first stored as OPEN
+ * They become CLOSED only when matched with opposite side
  */
 exports.normalizeExchangeTrade = ({
   userId,
@@ -13,24 +15,29 @@ exports.normalizeExchangeTrade = ({
 
     externalTradeId: trade.id || null,
 
-    symbol: trade.symbol?.toUpperCase(),
+    symbol: trade.symbol
+      ? trade.symbol.toUpperCase()
+      : null,
 
     side: trade.side === "buy" ? "buy" : "sell",
 
-    quantity: trade.amount,
+    quantity: trade.amount || trade.cost || 0,
 
     entryPrice: trade.price,
 
-    exitPrice: trade.price,
+    exitPrice: null,
 
-    fee: trade.fee?.cost || 0,
+    fee:
+      trade.fee && trade.fee.cost
+        ? trade.fee.cost
+        : 0,
 
-    pnl: trade.pnl || 0,
+    pnl: 0,
 
     openedAt: new Date(trade.timestamp),
 
-    closedAt: trade.timestamp ? new Date(trade.timestamp) : null,
+    closedAt: null,
 
-    status: "CLOSED",
+    status: "OPEN",
   };
 };
