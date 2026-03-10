@@ -1,101 +1,61 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AppLayout from "../layouts/AppLayout";
-import { apiRequest } from "../services/api";
 import "./Settings.css";
 
+import SettingsSidebar from "./settings/SettingsSidebar";
+
+import ProfileSettings from "./settings/sections/ProfileSettings";
+import SecuritySettings from "./settings/sections/SecuritySettings";
+import ExchangeSettings from "./settings/sections/ExchangeSettings";
+import TradingPreferences from "./settings/sections/TradingPreferences";
+import NotificationSettings from "./settings/sections/NotificationSettings";
+import DataPrivacySettings from "./settings/sections/DataPrivacySettings";
+import DangerZoneSettings from "./settings/sections/DangerZoneSettings";
+
 const Settings = () => {
-  const [settings, setSettings] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("profile");
 
-  useEffect(() => {
-    apiRequest("/settings").then(setSettings);
-  }, []);
+  const renderContent = () => {
+    switch (activeTab) {
+      case "profile":
+        return <ProfileSettings />;
 
-  const handlePreferenceSave = async () => {
-    setSaving(true);
-    await apiRequest("/settings/preferences", {
-      method: "PUT",
-      body: JSON.stringify(settings.preferences),
-    });
-    setMessage("Preferences saved");
-    setSaving(false);
+      case "security":
+        return <SecuritySettings />;
+
+      case "exchanges":
+        return <ExchangeSettings />;
+
+      case "preferences":
+        return <TradingPreferences />;
+
+      case "notifications":
+        return <NotificationSettings />;
+
+      case "privacy":
+        return <DataPrivacySettings />;
+
+      case "danger":
+        return <DangerZoneSettings />;
+
+      default:
+        return <ProfileSettings />;
+    }
   };
-
-  if (!settings) return <AppLayout>Loading...</AppLayout>;
 
   return (
     <AppLayout>
       <div className="settings-container">
-        <h1>Settings</h1>
 
-        <section className="settings-section">
-          <h3>Trading Preferences</h3>
+        <SettingsSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-          <label>
-            Risk per trade (%)
-            <input
-              type="number"
-              value={settings.preferences.riskPerTrade}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  preferences: {
-                    ...settings.preferences,
-                    riskPerTrade: e.target.value,
-                  },
-                })
-              }
-            />
-          </label>
+        <div className="settings-content">
+          {renderContent()}
+        </div>
 
-          <label>
-            Base Currency
-            <select
-              value={settings.preferences.baseCurrency}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  preferences: {
-                    ...settings.preferences,
-                    baseCurrency: e.target.value,
-                  },
-                })
-              }
-            >
-              <option>USD</option>
-              <option>EUR</option>
-              <option>NGN</option>
-            </select>
-          </label>
-
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={settings.preferences.autoSync}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  preferences: {
-                    ...settings.preferences,
-                    autoSync: e.target.checked,
-                  },
-                })
-              }
-            />
-            Enable Auto Sync
-          </label>
-
-          <button
-            className="btn"
-            onClick={handlePreferenceSave}
-            disabled={saving}
-          >
-            Save Preferences
-          </button>
-
-          {message && <p className="success">{message}</p>}
-        </section>
       </div>
     </AppLayout>
   );
