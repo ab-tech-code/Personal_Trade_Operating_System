@@ -11,6 +11,7 @@ const analyticsRoutes = require("./routes/analytics.routes");
 const exchangeRoutes = require("./routes/exchange.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const settingsRoutes = require("./modules/settings/settings.routes"); 
+require("./cron/exchangeSync.cron");
 
 
 const app = express();
@@ -26,6 +27,7 @@ app.use("/api/exchanges", exchangeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/settings", settingsRoutes); 
+require("./cron/exchangeSync.cron"); 
 
 
 module.exports = app;

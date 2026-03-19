@@ -31,25 +31,23 @@ const exchange = new ExchangeClass({
   password: exchangeConfig.apiPassword
     ? decrypt(exchangeConfig.apiPassword)
     : undefined,
+
   enableRateLimit: true,
-  options: {
-    defaultType: "future", // important for futures exchanges
-  },
+
+  timeout: 30000, // 🔥 increase to 30s
 });
 
+// Lightweight auth test (safer)
 try {
-  // Authentication test
-  await exchange.fetchMyTrades(undefined, undefined, 1);
+  await exchange.fetchBalance(); // MUCH more reliable
 
   exchangeConfig.status = "VERIFIED";
 } catch (err) {
-  console.error("Exchange auth error:", err.message);
-
   exchangeConfig.status = "AUTH_FAILED";
   await exchangeConfig.save();
 
   throw new Error(
-    "Exchange authentication failed: " + err.message
+    `Exchange authentication failed: ${exchangeConfig.exchange} ${err.message}`
   );
 }
 

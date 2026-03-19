@@ -66,13 +66,10 @@ exports.syncExchange = async (req, res) => {
       req.params.id
     );
 
-    res.json({
-      message: "Exchange trades synced successfully",
-      ...result,
-    });
-  } catch (err) {
+    res.json(result);
+  } catch (error) {
     res.status(400).json({
-      message: err.message || "Exchange sync failed",
+      message: error.message,
     });
   }
 };
