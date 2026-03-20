@@ -21,12 +21,30 @@ exports.getDashboardSummary = async (userId) => {
         _id: null,
         totalTrades: { $sum: 1 },
         totalPnL: { $sum: "$pnl" },
+
         wins: {
           $sum: { $cond: [{ $gt: ["$pnl", 0] }, 1, 0] },
         },
+
         losses: {
           $sum: { $cond: [{ $lte: ["$pnl", 0] }, 1, 0] },
         },
+
+        avgWin: {
+          $avg: {
+            $cond: [{ $gt: ["$pnl", 0] }, "$pnl", null],
+          },
+        },
+
+        avgLoss: {
+          $avg: {
+            $cond: [{ $lt: ["$pnl", 0] }, "$pnl", null],
+          },
+        },
+
+        bestTrade: { $max: "$pnl" },
+        worstTrade: { $min: "$pnl" },
+
         lastActivity: { $max: "$closedAt" },
       },
     },
@@ -45,6 +63,11 @@ exports.getDashboardSummary = async (userId) => {
 
   const data = result[0];
 
+  const riskReward =
+    data.avgLoss !== 0
+      ? Math.abs(data.avgWin / data.avgLoss)
+      : 0;
+
   return {
     totalTrades: data.totalTrades,
     totalPnL: Number(data.totalPnL.toFixed(2)),
@@ -54,6 +77,13 @@ exports.getDashboardSummary = async (userId) => {
       data.totalTrades === 0
         ? 0
         : Number(((data.wins / data.totalTrades) * 100).toFixed(2)),
+
+    avgWin: Number((data.avgWin || 0).toFixed(2)),
+    avgLoss: Number((data.avgLoss || 0).toFixed(2)),
+    bestTrade: Number((data.bestTrade || 0).toFixed(2)),
+    worstTrade: Number((data.worstTrade || 0).toFixed(2)),
+    riskReward: Number(riskReward.toFixed(2)),
+
     lastActivity: data.lastActivity,
   };
 };
@@ -154,17 +184,25 @@ exports.getEquityCurve = async (userId) => {
     status: "CLOSED",
     closedAt: { $ne: null },
   })
-    .sort({ closedAt: 1 }) // chronological order
+    .sort({ closedAt: 1 })
     .select("closedAt pnl");
 
   let cumulative = 0;
+  let peak = 0;
 
   const curve = trades.map((trade) => {
     cumulative += trade.pnl || 0;
 
+    if (cumulative > peak) {
+      peak = cumulative;
+    }
+
+    const drawdown = peak === 0 ? 0 : ((peak - cumulative) / peak) * 100;
+
     return {
       date: trade.closedAt,
       equity: Number(cumulative.toFixed(2)),
+      drawdown: Number(drawdown.toFixed(2)), // 🔥 NEW
     };
   });
 

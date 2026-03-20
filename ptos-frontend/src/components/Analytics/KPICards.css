@@ -1,0 +1,32 @@
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: #111;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #222;
+}
+
+.kpi-card h4 {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+.kpi-card p {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.green {
+  color: #4caf50;
+}
+
+.red {
+  color: #f44336;
+}

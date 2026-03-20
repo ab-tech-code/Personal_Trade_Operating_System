@@ -6,6 +6,9 @@ import StrategyPerformanceChart from "../components/StrategyPerformanceChart";
 import WinLossChart from "../components/WinLossChart";
 import EquityCurveChart from "../components/EquityCurveChart";
 
+import KPICards from "../components/Analytics/KPICards";
+import DrawdownChart from "../components/DrawdownChart";
+
 import {
   fetchDashboardSummary,
   fetchMonthlyPerformance,
@@ -52,54 +55,55 @@ const Analytics = () => {
       {loading && <Loading />}
 
       {!loading && (
-        <div className="analytics-grid">
-          {/* Equity Curve */}
-          <div className="chart-placeholder">
-            <h3>Equity Curve</h3>
-            {equityCurve.length === 0 ? (
-              <p className="empty-state">No trades yet</p>
-            ) : (
-              <EquityCurveChart data={equityCurve} />
-            )}
-          </div>
+        <>
+          {/* 🔥 KPI CARDS */}
+          <KPICards summary={summary} />
 
-          {/* Win / Loss Distribution */}
-          <div className="chart-placeholder">
-            <h3>Win / Loss Distribution</h3>
-            {!summary || summary.totalTrades === 0 ? (
-              <p className="empty-state">No trades yet</p>
-            ) : (
+          <div className="analytics-grid">
+            {/* Equity Curve */}
+            <div className="chart-placeholder">
+              <h3>Equity Curve</h3>
+              {equityCurve.length === 0 ? (
+                <p className="empty-state">No trades yet</p>
+              ) : (
+                <EquityCurveChart data={equityCurve} />
+              )}
+            </div>
+
+            {/* 🔥 Drawdown Chart */}
+            <div className="chart-placeholder">
+              <h3>Drawdown</h3>
+              {equityCurve.length === 0 ? (
+                <p className="empty-state">No data</p>
+              ) : (
+                <DrawdownChart data={equityCurve} />
+              )}
+            </div>
+
+            {/* Win / Loss */}
+            <div className="chart-placeholder">
+              <h3>Win / Loss</h3>
               <WinLossChart
                 data={[
                   { name: "Wins", value: summary.wins },
                   { name: "Losses", value: summary.losses },
                 ]}
               />
-            )}
-          </div>
+            </div>
 
-          {/* Monthly Performance */}
-          <div className="chart-placeholder">
-            <h3>Monthly Performance</h3>
-            {monthlyPerformance.length === 0 ? (
-              <p className="empty-state">No data yet</p>
-            ) : (
+            {/* Monthly */}
+            <div className="chart-placeholder">
+              <h3>Monthly Performance</h3>
               <MonthlyPerformanceChart data={monthlyPerformance} />
-            )}
-          </div>
+            </div>
 
-          {/* Strategy Performance */}
-          <div className="chart-placeholder">
-            <h3>Strategy Performance</h3>
-            {strategyPerformance.length === 0 ? (
-              <p className="empty-state">No strategy data yet</p>
-            ) : (
-              <StrategyPerformanceChart
-                data={strategyPerformance}
-              />
-            )}
+            {/* Strategy */}
+            <div className="chart-placeholder">
+              <h3>Strategy Performance</h3>
+              <StrategyPerformanceChart data={strategyPerformance} />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </AppLayout>
   );

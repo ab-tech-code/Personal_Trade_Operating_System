@@ -23,9 +23,10 @@ const EquityCurveChart = ({ data }) => {
             new Date(label).toLocaleDateString()
           }
         />
-        <Line
+        <Line 
           type="monotone"
           dataKey="equity"
+          stroke="#4caf50"
           strokeWidth={2}
           dot={false}
         />
