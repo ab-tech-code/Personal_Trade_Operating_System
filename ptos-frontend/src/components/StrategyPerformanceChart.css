@@ -1,0 +1,55 @@
+.strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.strategy-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.strategy-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rank {
+  font-weight: bold;
+  color: #888;
+}
+
+.name {
+  font-weight: bold;
+}
+
+.strategy-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.strategy-stats label {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.strategy-stats p {
+  font-weight: bold;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #222;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4caf50;
+}

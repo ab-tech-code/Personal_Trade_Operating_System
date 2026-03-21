@@ -104,11 +104,11 @@ exports.getRecentTrades = async (userId) => {
  * STRATEGY PERFORMANCE
  */
 exports.getStrategyAnalytics = async (userId) => {
-  return Trade.aggregate([
+  const result = await Trade.aggregate([
     {
       $match: {
         user: new mongoose.Types.ObjectId(userId),
-        status: CLOSED,
+        status: "CLOSED",
       },
     },
     {
@@ -121,8 +121,31 @@ exports.getStrategyAnalytics = async (userId) => {
         },
       },
     },
+    {
+      $addFields: {
+        winRate: {
+          $cond: [
+            { $eq: ["$tradeCount", 0] },
+            0,
+            {
+              $multiply: [
+                { $divide: ["$wins", "$tradeCount"] },
+                100,
+              ],
+            },
+          ],
+        },
+      },
+    },
     { $sort: { totalPnL: -1 } },
   ]);
+
+  return result.map((s) => ({
+    strategy: s._id || "Unknown",
+    totalPnL: Number(s.totalPnL.toFixed(2)),
+    tradeCount: s.tradeCount,
+    winRate: Number(s.winRate.toFixed(1)),
+  }));
 };
 
 /**
