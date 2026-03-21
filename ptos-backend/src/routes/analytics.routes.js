@@ -9,6 +9,7 @@ const {
   getMonthlyAnalytics,
   getRecentTrades,
   getEquityCurve,
+  getTradeStreaks,
 } = require("../controllers/analytics.controller");
 
 router.get("/summary", auth, getDashboardSummary);
@@ -17,5 +18,6 @@ router.get("/strategy-performance", auth, getStrategyAnalytics);
 router.get("/symbol-performance", auth, getSymbolAnalytics);
 router.get("/monthly-performance", auth, getMonthlyAnalytics);
 router.get("/equity-curve", auth, getEquityCurve);
+router.get("/streaks", auth, getTradeStreaks);
 
 module.exports = router;

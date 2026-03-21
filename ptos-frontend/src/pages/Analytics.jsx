@@ -9,11 +9,14 @@ import EquityCurveChart from "../components/EquityCurveChart";
 import KPICards from "../components/Analytics/KPICards";
 import DrawdownChart from "../components/DrawdownChart";
 
+import TradeStreaks from "../components/TradeStreaks";
+
 import {
   fetchDashboardSummary,
   fetchMonthlyPerformance,
   fetchStrategyPerformance,
   fetchEquityCurve,
+  fetchTradeStreaks,
 } from "../services/analytics.service";
 
 const Analytics = () => {
@@ -22,22 +25,25 @@ const Analytics = () => {
   const [strategyPerformance, setStrategyPerformance] = useState([]);
   const [equityCurve, setEquityCurve] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [streaks, setStreaks] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [summaryData, monthlyData, strategyData, equityData] =
+        const [summaryData, monthlyData, strategyData, equityData, streakData] =
           await Promise.all([
             fetchDashboardSummary(),
             fetchMonthlyPerformance(),
             fetchStrategyPerformance(),
             fetchEquityCurve(),
+            fetchTradeStreaks(), // ✅ NEW
           ]);
 
         setSummary(summaryData);
         setMonthlyPerformance(monthlyData);
         setStrategyPerformance(strategyData);
         setEquityCurve(equityData); // ✅ THIS WAS MISSING
+        setStreaks(streakData);
       } catch (err) {
         console.error("Analytics load failed:", err.message);
       } finally {
@@ -51,6 +57,7 @@ const Analytics = () => {
   return (
     <AppLayout>
       <h1>Analytics</h1>
+      <TradeStreaks data={streaks} />
 
       {loading && <Loading />}
 

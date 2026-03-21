@@ -1,0 +1,31 @@
+.streak-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.streak-card {
+  background: #111;
+  border: 1px solid #222;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.streak-card h4 {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.streak-card p {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.green {
+  color: #4caf50;
+}
+
+.red {
+  color: #f44336;
+}

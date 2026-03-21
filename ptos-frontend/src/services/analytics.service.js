@@ -35,3 +35,7 @@ export const fetchSymbolPerformance = async () => {
 export const fetchEquityCurve = async () => {
   return apiRequest("/analytics/equity-curve");
 };
+
+export const fetchTradeStreaks = async () => {
+  return apiRequest("/analytics/streaks");
+};

@@ -231,3 +231,58 @@ exports.getEquityCurve = async (userId) => {
 
   return curve;
 };
+
+
+/**
+ * TRADE STREAK ENGINE
+ */
+exports.getTradeStreaks = async (userId) => {
+  const trades = await Trade.find({
+    user: userId,
+    status: "CLOSED",
+    closedAt: { $ne: null },
+  })
+    .sort({ closedAt: 1 }) // chronological
+    .select("pnl");
+
+  let currentWinStreak = 0;
+  let currentLossStreak = 0;
+  let maxWinStreak = 0;
+  let maxLossStreak = 0;
+
+  let tempWin = 0;
+  let tempLoss = 0;
+
+  for (const trade of trades) {
+    if (trade.pnl > 0) {
+      tempWin++;
+      tempLoss = 0;
+    } else {
+      tempLoss++;
+      tempWin = 0;
+    }
+
+    if (tempWin > maxWinStreak) maxWinStreak = tempWin;
+    if (tempLoss > maxLossStreak) maxLossStreak = tempLoss;
+  }
+
+  // Determine CURRENT streak
+  for (let i = trades.length - 1; i >= 0; i--) {
+    const trade = trades[i];
+
+    if (trade.pnl > 0) {
+      currentWinStreak++;
+      if (currentLossStreak > 0) break;
+    } else {
+      currentLossStreak++;
+      if (currentWinStreak > 0) break;
+    }
+  }
+
+  return {
+    currentWinStreak,
+    currentLossStreak,
+    maxWinStreak,
+    maxLossStreak,
+  };
+};
