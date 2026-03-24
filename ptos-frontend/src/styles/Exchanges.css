@@ -1,0 +1,123 @@
+.exchanges-container {
+  padding: 20px;
+  color: #eaecef;
+}
+
+.subtitle {
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+/* Cards */
+.card {
+  background: #1e2329;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Form */
+.form-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.form-grid input,
+.form-grid select {
+  padding: 10px;
+  background: #2b3139;
+  border: none;
+  border-radius: 6px;
+  color: white;
+}
+
+/* Buttons */
+.primary-btn {
+  background: #2962ff;
+  color: white;
+}
+
+.btn-outline {
+  border: 1px solid #2962ff;
+  color: #2962ff;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+/* Status badges */
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.success {
+  background: rgba(0, 200, 5, 0.2);
+  color: #00c805;
+}
+
+.danger {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff5050;
+}
+
+.warning {
+  background: rgba(255, 180, 0, 0.2);
+  color: #ffb400;
+}
+
+/* Grid */
+.exchange-grid {
+  display: grid;
+  gap: 15px;
+}
+
+.exchange-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exchange-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exchange-meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Messages */
+.success-msg {
+  color: #00c805;
+}
+
+.error-msg {
+  color: #ff5050;
+}
+
+/* Empty */
+.empty-box {
+  background: #1e2329;
+  padding: 20px;
+  text-align: center;
+  border-radius: 10px;
+}
+
+/* Security note */
+.security-note {
+  margin-top: 20px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

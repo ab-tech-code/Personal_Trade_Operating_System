@@ -1,0 +1,63 @@
+.danger-zone-container {
+  width: 100%;
+}
+
+/* Header */
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  color: #ff4d4f;
+}
+
+/* Cards */
+.danger-card {
+  background: #2a1a1a;
+  border: 1px solid #ff4d4f33;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.danger-card.critical {
+  border-color: #ff0000;
+}
+
+/* Confirm box */
+.confirm-box {
+  margin-top: 10px;
+}
+
+.confirm-box input {
+  width: 100%;
+  padding: 10px;
+  background: #1e1e1e;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+/* Buttons */
+.danger-btn {
+  background: #ff4d4f;
+  color: white;
+}
+
+/* Messages */
+.error-box {
+  background: rgba(255, 80, 80, 0.1);
+  color: #ff5050;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.success-box {
+  background: rgba(0, 200, 100, 0.1);
+  color: #00c864;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}

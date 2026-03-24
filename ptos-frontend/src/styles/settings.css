@@ -1,0 +1,73 @@
+/* Layout */
+.settings-page {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  color: #eaecef;
+}
+
+/* Sidebar space handled separately */
+.settings-main {
+  flex: 1;
+}
+
+/* Header */
+.settings-header {
+  margin-bottom: 20px;
+}
+
+.settings-header h1 {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.settings-subtitle {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Card */
+.settings-card {
+  background: #1e2329;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Form styles (shared across all sections) */
+.settings-card label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.settings-card input,
+.settings-card select {
+  width: 100%;
+  padding: 10px;
+  background: #2b3139;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  margin-bottom: 15px;
+}
+
+/* Buttons */
+.settings-card .btn {
+  margin-top: 10px;
+}
+
+/* Danger Zone */
+.danger-box {
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  padding: 15px;
+  border-radius: 8px;
+  background: rgba(255, 80, 80, 0.05);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .settings-page {
+    flex-direction: column;
+  }
+}

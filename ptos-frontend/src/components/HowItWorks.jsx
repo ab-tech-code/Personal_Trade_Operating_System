@@ -1,30 +1,104 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/landing.css";
 
-const HowItWorks = () => {
+const Landing = () => {
+  const navigate = useNavigate();
+
   return (
-    <section>
-      <div className="container">
-        <h2>How PTOS Works</h2>
+    <div className="landing">
+      {/* HERO */}
+      <section className="hero">
+        <h1>
+          Track Your Trades Like a <span>Pro</span>
+        </h1>
+        <p>
+          PTOS helps you analyze performance, connect exchanges,
+          and improve your trading strategy with powerful insights.
+        </p>
 
-        <ol>
-          <li>
-            <strong>Connect your exchanges</strong>
-            <p>Secure, read-only API connections.</p>
-          </li>
+        <div className="hero-actions">
+          <button
+            className="btn-primary"
+            onClick={() => navigate("/register")}
+          >
+            Get Started
+          </button>
 
-          <li>
-            <strong>Track & analyze automatically</strong>
-            <p>Trades are imported, normalized, and analyzed.</p>
-          </li>
+          <button
+            className="btn-secondary"
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </button>
+        </div>
+      </section>
 
-          <li>
-            <strong>Review, improve, and scale</strong>
-            <p>See what works. Fix what doesn’t.</p>
-          </li>
-        </ol>
-      </div>
-    </section>
+      {/* FEATURES */}
+      <section className="features">
+        <h2>Why PTOS?</h2>
+
+        <div className="feature-grid">
+          <div className="feature-card">
+            <h3>📊 Advanced Analytics</h3>
+            <p>
+              Track PnL, equity curve, streaks, and performance
+              like institutional traders.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <h3>🔗 Exchange Integration</h3>
+            <p>
+              Connect Binance, Bybit and more. Sync your trades
+              automatically.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <h3>🧠 Smart Insights</h3>
+            <p>
+              Understand your strategy performance and improve
+              your trading decisions.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="how">
+        <h2>How It Works</h2>
+
+        <div className="steps">
+          <div className="step">
+            <span>1</span>
+            <p>Create your account</p>
+          </div>
+
+          <div className="step">
+            <span>2</span>
+            <p>Connect your exchange</p>
+          </div>
+
+          <div className="step">
+            <span>3</span>
+            <p>Track & improve your trades</p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="cta">
+        <h2>Start Improving Your Trading Today</h2>
+        <button
+          className="btn-primary"
+          onClick={() => navigate("/register")}
+        >
+          Create Free Account
+        </button>
+      </section>
+    </div>
   );
 };
 
-export default HowItWorks;
+export default Landing;

@@ -1,9 +1,15 @@
 import React from "react";
 
-const Topbar = () => {
+const Topbar = ({ onMenuClick }) => {
   return (
     <header className="topbar">
-      <span>Personal Trading Operating System</span>
+      <button className="menu-btn" onClick={onMenuClick}>
+        ☰
+      </button>
+
+      <span className="title">
+        Personal Trading Operating System
+      </span>
     </header>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { apiRequest } from "../../../services/api";
+import "../../../styles/settings-security.css";
 
 const SecuritySettings = () => {
   const [passwords, setPasswords] = useState({
@@ -10,38 +11,79 @@ const SecuritySettings = () => {
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Password strength checker
+  const getStrength = (password) => {
+    if (password.length < 6) return "weak";
+    if (password.match(/^(?=.*[A-Z])(?=.*\d).{6,}$/)) return "strong";
+    return "medium";
+  };
+
+  const strength = getStrength(passwords.newPassword);
+
+  const validate = () => {
+    if (!passwords.currentPassword) return "Current password is required";
+
+    if (passwords.newPassword.length < 6)
+      return "Password must be at least 6 characters";
+
+    if (passwords.newPassword !== passwords.confirmPassword)
+      return "Passwords do not match";
+
+    return null;
+  };
 
   const changePassword = async () => {
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      setMessage("New passwords do not match");
+    setError("");
+    setMessage("");
+
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    await apiRequest("/settings/password", {
-      method: "PUT",
-      body: JSON.stringify(passwords),
-    });
+      await apiRequest("/settings/password", {
+        method: "PUT",
+        body: JSON.stringify(passwords),
+      });
 
-    setSaving(false);
-    setMessage("Password updated successfully");
+      setMessage("✅ Password updated successfully");
 
-    setPasswords({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(err.message || "Failed to update password");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="settings-section">
-      <h2>Security</h2>
+    <div className="security-settings">
+      {/* Header */}
+      <div className="section-header">
+        <h2>Security</h2>
+        <p>Manage your account password and security</p>
+      </div>
 
-      <label>
-        Current Password
+      {/* Messages */}
+      {error && <div className="error-box">{error}</div>}
+      {message && <div className="success-box">{message}</div>}
+
+      {/* Form */}
+      <div className="form-group">
+        <label>Current Password</label>
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={passwords.currentPassword}
           onChange={(e) =>
             setPasswords({
@@ -50,12 +92,12 @@ const SecuritySettings = () => {
             })
           }
         />
-      </label>
+      </div>
 
-      <label>
-        New Password
+      <div className="form-group">
+        <label>New Password</label>
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={passwords.newPassword}
           onChange={(e) =>
             setPasswords({
@@ -64,12 +106,19 @@ const SecuritySettings = () => {
             })
           }
         />
-      </label>
 
-      <label>
-        Confirm New Password
+        {/* Strength Indicator */}
+        {passwords.newPassword && (
+          <div className={`password-strength ${strength}`}>
+            Strength: {strength.toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label>Confirm New Password</label>
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={passwords.confirmPassword}
           onChange={(e) =>
             setPasswords({
@@ -78,13 +127,28 @@ const SecuritySettings = () => {
             })
           }
         />
-      </label>
+      </div>
 
-      <button className="btn" onClick={changePassword} disabled={saving}>
-        {saving ? "Updating..." : "Change Password"}
-      </button>
+      {/* Toggle */}
+      <div className="checkbox">
+        <input
+          type="checkbox"
+          checked={showPassword}
+          onChange={() => setShowPassword(!showPassword)}
+        />
+        <span>Show Passwords</span>
+      </div>
 
-      {message && <p className="success">{message}</p>}
+      {/* Action */}
+      <div className="form-actions">
+        <button
+          className="btn primary-btn"
+          onClick={changePassword}
+          disabled={saving}
+        >
+          {saving ? "Updating..." : "Change Password"}
+        </button>
+      </div>
     </div>
   );
 };

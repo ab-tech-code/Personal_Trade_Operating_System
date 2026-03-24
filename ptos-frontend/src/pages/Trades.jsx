@@ -3,6 +3,7 @@ import AppLayout from "../layouts/AppLayout";
 import Loading from "../components/Loading";
 import { Link } from "react-router-dom";
 import { fetchTrades, deleteTrade } from "../services/trades.service";
+import "../styles/trades.css";
 
 const Trades = () => {
   const [trades, setTrades] = useState([]);
@@ -32,9 +33,7 @@ const Trades = () => {
   }, [filters]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this trade?")) {
-      return;
-    }
+    if (!window.confirm("Delete this trade?")) return;
 
     try {
       await deleteTrade(id);
@@ -46,17 +45,20 @@ const Trades = () => {
 
   return (
     <AppLayout>
-      <div className="container">
-        <h1>Trades</h1>
-
-        <Link to="/app/trades/new" className="btn">
-          + Add Manual Trade
-        </Link>
+      <div className="trades-container">
+        {/* Header */}
+        <div className="trades-header">
+          <h1>Trades</h1>
+          <Link to="/app/trades/new" className="btn primary-btn">
+            + Add Trade
+          </Link>
+        </div>
 
         {/* Filters */}
-        <div className="trade-filters">
+        <div className="filters-card">
           <input
-            placeholder="Symbol"
+            className="filter-input"
+            placeholder="Search symbol (e.g. BTC)"
             value={filters.symbol}
             onChange={(e) =>
               setFilters({ ...filters, symbol: e.target.value })
@@ -64,6 +66,7 @@ const Trades = () => {
           />
 
           <select
+            className="filter-select"
             value={filters.source}
             onChange={(e) =>
               setFilters({ ...filters, source: e.target.value })
@@ -75,6 +78,7 @@ const Trades = () => {
           </select>
 
           <select
+            className="filter-select"
             value={filters.status}
             onChange={(e) =>
               setFilters({ ...filters, status: e.target.value })
@@ -86,65 +90,81 @@ const Trades = () => {
           </select>
         </div>
 
+        {/* States */}
         {loading && <Loading />}
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p className="error">{error}</p>}
 
         {!loading && trades.length === 0 && (
-          <p className="empty-state">No trades found.</p>
+          <div className="empty-box">
+            <p>No trades found</p>
+          </div>
         )}
 
+        {/* Table */}
         {!loading && trades.length > 0 && (
-          <div className="trade-list">
-            <div className="trade-header">
-              <span>Symbol</span>
-              <span>Side</span>
-              <span>Status</span>
-              <span>Source</span>
-              <span>PnL</span>
-              <span>Actions</span>
-            </div>
-
-            {trades.map((trade) => (
-              <div key={trade._id} className="trade-row">
-                <span>{trade.symbol}</span>
-                <span>{trade.side.toUpperCase()}</span>
-                <span>{trade.status}</span>
-                <span>
-                  {trade.source === "manual" ? "🟢 Manual" : "🔵 Exchange"}
-                </span>
-                <span
-                  style={{
-                    color:
-                      trade.pnl > 0
-                        ? "green"
-                        : trade.pnl < 0
-                        ? "red"
-                        : "gray",
-                  }}
-                >
-                  {trade.pnl}
-                </span>
-
-                <span>
-                  {trade.source === "manual" ? (
-                    <button
-                      className="btn danger-btn"
-                      onClick={() => handleDelete(trade._id)}
-                    >
-                      Delete
-                    </button>
-                  ) : (
-                    <button
-                      className="btn disabled-btn"
-                      disabled
-                      title="Exchange trades cannot be deleted"
-                    >
-                      Locked
-                    </button>
-                  )}
-                </span>
+          <div className="table-card">
+            <div className="trade-table">
+              <div className="trade-header-row">
+                <span>Symbol</span>
+                <span>Side</span>
+                <span>Status</span>
+                <span>Source</span>
+                <span>PnL</span>
+                <span>Action</span>
               </div>
-            ))}
+
+              {trades.map((trade) => {
+                const pnlClass =
+                  trade.pnl > 0
+                    ? "pnl-profit"
+                    : trade.pnl < 0
+                    ? "pnl-loss"
+                    : "pnl-neutral";
+
+                return (
+                  <div key={trade._id} className="trade-row">
+                    <span className="symbol">{trade.symbol}</span>
+
+                    <span
+                      className={
+                        trade.side === "buy"
+                          ? "badge buy"
+                          : "badge sell"
+                      }
+                    >
+                      {trade.side.toUpperCase()}
+                    </span>
+
+                    <span className="status">{trade.status}</span>
+
+                    <span className="source">
+                      {trade.source === "manual"
+                        ? "Manual"
+                        : "Exchange"}
+                    </span>
+
+                    <span className={`pnl ${pnlClass}`}>
+                      {trade.pnl > 0 && "+"}${trade.pnl}
+                    </span>
+
+                    <span>
+                      {trade.source === "manual" ? (
+                        <button
+                          className="btn danger-btn"
+                          onClick={() => handleDelete(trade._id)}
+                        >
+                          Delete
+                        </button>
+                      ) : (
+                        <button className="btn disabled-btn" disabled>
+                          Locked
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

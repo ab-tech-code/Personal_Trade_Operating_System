@@ -2,21 +2,42 @@ import React from "react";
 
 const RecentTrades = ({ trades }) => {
   if (!trades || trades.length === 0) {
-    return <p>No trades yet. Connect an exchange or add a trade manually.</p>;
+    return (
+      <div className="empty-state">
+        No trades yet. Connect an exchange or add manually.
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="recent-trades">
       <h3>Recent Trades</h3>
-      {trades.map((trade) => (
-        <div key={trade._id}>
-          <strong>{trade.symbol}</strong> — ${trade.pnl}
-        </div>
-      ))}
+
+      <div className="trade-list">
+        {trades.map((trade) => {
+          const pnlClass =
+            trade.pnl >= 0 ? "positive" : "negative";
+
+          return (
+            <div key={trade._id} className="trade-item">
+              <div>
+                <strong>{trade.symbol}</strong>
+                <span className="trade-date">
+                  {new Date(trade.closedAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              <div className={`trade-pnl ${pnlClass}`}>
+                {trade.pnl >= 0
+                  ? `+$${trade.pnl.toFixed(2)}`
+                  : `-$${Math.abs(trade.pnl).toFixed(2)}`}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
 export default RecentTrades;
-
-

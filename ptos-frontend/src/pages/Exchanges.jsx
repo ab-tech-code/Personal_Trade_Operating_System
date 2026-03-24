@@ -5,7 +5,7 @@ import {
   fetchExchanges,
   syncExchange,
 } from "../services/exchange.service";
-import "./Exchanges.css";
+import "../styles/exchanges.css";
 
 const Exchanges = () => {
   const [exchange, setExchange] = useState("bybit");
@@ -45,10 +45,7 @@ const Exchanges = () => {
         apiPassword: apiPassword || undefined,
       });
 
-      setMessage(
-        `${exchange.toUpperCase()} saved. Click "Sync Now" to verify API access.`
-      );
-
+      setMessage(`${exchange.toUpperCase()} saved. Click Sync to verify.`);
       setApiKey("");
       setApiSecret("");
       setApiPassword("");
@@ -67,10 +64,10 @@ const Exchanges = () => {
 
     try {
       await syncExchange(id);
-      setMessage("Exchange verified and synced successfully.");
+      setMessage("Exchange verified & synced.");
       loadExchanges();
     } catch (err) {
-      setError(err.message || "Sync failed. Check API keys & permissions.");
+      setError(err.message || "Sync failed");
     } finally {
       setSyncingId(null);
     }
@@ -79,27 +76,28 @@ const Exchanges = () => {
   const renderStatus = (status) => {
     switch (status) {
       case "VERIFIED":
-        return <span className="status verified">Verified</span>;
+        return <span className="badge success">Verified</span>;
       case "AUTH_FAILED":
-        return <span className="status failed">Auth Failed</span>;
+        return <span className="badge danger">Auth Failed</span>;
       default:
-        return <span className="status pending">Unverified</span>;
+        return <span className="badge warning">Unverified</span>;
     }
   };
 
   return (
     <AppLayout>
-      <div className="exchange-container">
-        <h1>Exchanges</h1>
+      <div className="exchanges-container">
+        <h1>Exchange Connections</h1>
 
-        <p className="exchange-subtitle">
-          Connect your exchange using <strong>read-only</strong> API keys.
+        <p className="subtitle">
+          Securely connect your exchange using <strong>read-only API keys</strong>.
         </p>
 
-        {/* CONNECT FORM */}
-        <div className="exchange-card">
-          <label>
-            Exchange
+        {/* CONNECT CARD */}
+        <div className="card connect-card">
+          <h3>Connect New Exchange</h3>
+
+          <div className="form-grid">
             <select
               value={exchange}
               onChange={(e) => setExchange(e.target.value)}
@@ -109,60 +107,64 @@ const Exchanges = () => {
               <option value="blofin">Blofin</option>
               <option value="bitunix">Bitunix</option>
             </select>
-          </label>
 
-          <label>
-            API Key
             <input
-              type="text"
+              placeholder="API Key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
-          </label>
 
-          <label>
-            API Secret
             <input
               type="password"
+              placeholder="API Secret"
               value={apiSecret}
               onChange={(e) => setApiSecret(e.target.value)}
             />
-          </label>
 
-          <label>
-            API Passphrase (optional)
             <input
               type="password"
+              placeholder="Passphrase (optional)"
               value={apiPassword}
               onChange={(e) => setApiPassword(e.target.value)}
             />
-          </label>
+          </div>
 
-          <button className="btn" onClick={handleConnect} disabled={loading}>
-            {loading ? "Saving..." : "Connect Exchange"}
+          <button
+            className="btn primary-btn"
+            onClick={handleConnect}
+            disabled={loading}
+          >
+            {loading ? "Connecting..." : "Connect Exchange"}
           </button>
 
           {message && <p className="success-msg">{message}</p>}
           {error && <p className="error-msg">{error}</p>}
         </div>
 
-        {/* CONNECTED EXCHANGES */}
+        {/* LIST */}
         <h2>Connected Exchanges</h2>
 
         {exchanges.length === 0 ? (
-          <p>No exchanges connected yet.</p>
+          <div className="empty-box">
+            <p>No exchanges connected</p>
+          </div>
         ) : (
-          <div className="exchange-list">
+          <div className="exchange-grid">
             {exchanges.map((ex) => (
-              <div key={ex._id} className="exchange-row">
-                <div>
-                  <strong>{ex.exchange.toUpperCase()}</strong>
-                  <div>{renderStatus(ex.status)}</div>
-                  {ex.lastSyncAt && (
-                    <small>
-                      Last sync:{" "}
+              <div key={ex._id} className="card exchange-item">
+                <div className="exchange-top">
+                  <h3>{ex.exchange.toUpperCase()}</h3>
+                  {renderStatus(ex.status)}
+                </div>
+
+                <div className="exchange-meta">
+                  {ex.lastSyncAt ? (
+                    <span>
+                      Last Sync:{" "}
                       {new Date(ex.lastSyncAt).toLocaleString()}
-                    </small>
+                    </span>
+                  ) : (
+                    <span>Never synced</span>
                   )}
                 </div>
 
@@ -178,8 +180,8 @@ const Exchanges = () => {
           </div>
         )}
 
-        <div className="exchange-note">
-          🔐 PTOS never places trades. Read-only access only.
+        <div className="security-note">
+          🔐 PTOS uses read-only access. No trading permissions required.
         </div>
       </div>
     </AppLayout>

@@ -1,18 +1,22 @@
 import React from "react";
+import { NavLink } from "react-router-dom";
 
-import { Link } from "react-router-dom";
-
-const Sidebar = () => {
+const Sidebar = ({ open, onClose }) => {
   return (
-    <aside className="sidebar">
-      <h2 className="sidebar-logo">PTOS</h2>
+    <aside className={`sidebar ${open ? "open" : ""}`}>
+      <div className="sidebar-header">
+        <h2>PTOS</h2>
+        <button className="close-btn" onClick={onClose}>
+          ✕
+        </button>
+      </div>
 
       <nav>
-        <Link to="/app/dashboard">Dashboard</Link>
-        <Link to="/app/trades">Trades</Link>
-        <Link to="/app/analytics">Analytics</Link>
-        <Link to="/app/exchanges">Exchanges</Link>
-        <Link to="/app/settings">Settings</Link>
+        <NavLink to="/app/dashboard">Dashboard</NavLink>
+        <NavLink to="/app/trades">Trades</NavLink>
+        <NavLink to="/app/analytics">Analytics</NavLink>
+        <NavLink to="/app/exchanges">Exchanges</NavLink>
+        <NavLink to="/app/settings">Settings</NavLink>
       </nav>
     </aside>
   );

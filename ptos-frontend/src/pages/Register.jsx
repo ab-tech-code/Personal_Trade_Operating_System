@@ -1,20 +1,59 @@
 import React, { useState } from "react";
 import { apiRequest } from "../services/api";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // Added import
+import { useAuth } from "../context/AuthContext";
+import "../styles/register.css";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { login } = useAuth(); // Destructure login from context
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [error, setError] = useState("");
+  const { login } = useAuth();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const [error, setError] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState("");
+
+  const validatePassword = (password) => {
+    if (password.length < 8) return "Weak";
+    if (
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[a-z]/.test(password)
+    )
+      return "Strong";
+    return "Medium";
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setForm({ ...form, [name]: value });
+
+    if (name === "password") {
+      setPasswordStrength(validatePassword(value));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // 🔐 VALIDATION
+    if (!form.name || !form.email || !form.password) {
+      return setError("All fields are required");
+    }
+
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      return setError("Invalid email format");
+    }
+
+    if (form.password.length < 8) {
+      return setError("Password must be at least 8 characters");
+    }
 
     try {
       const data = await apiRequest("/auth/register", {
@@ -22,7 +61,7 @@ const Register = () => {
         body: JSON.stringify(form),
       });
 
-      login(data.token); // Use context login instead of localStorage
+      login(data.token);
       navigate("/app/dashboard");
     } catch (err) {
       setError(err.message);
@@ -30,29 +69,49 @@ const Register = () => {
   };
 
   return (
-    <section>
-      <form className="auth-form" onSubmit={handleSubmit}>
+    <div className="auth-page">
+      <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Create Account</h2>
+        <p className="subtitle">Start tracking your trades like a pro</p>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <div className="error-box">{error}</div>}
 
         <label>Name</label>
-        <input name="name" value={form.name} onChange={handleChange} />
+        <input
+          name="name"
+          placeholder="John Doe"
+          value={form.name}
+          onChange={handleChange}
+        />
 
         <label>Email</label>
-        <input name="email" value={form.email} onChange={handleChange} />
+        <input
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          value={form.email}
+          onChange={handleChange}
+        />
 
         <label>Password</label>
         <input
           name="password"
           type="password"
+          placeholder="••••••••"
           value={form.password}
           onChange={handleChange}
         />
 
-        <button className="btn">Create Account</button>
+        {/* 🔥 Password Strength */}
+        {form.password && (
+          <p className={`strength ${passwordStrength.toLowerCase()}`}>
+            Strength: {passwordStrength}
+          </p>
+        )}
+
+        <button className="btn-primary">Create Account</button>
       </form>
-    </section>
+    </div>
   );
 };
 

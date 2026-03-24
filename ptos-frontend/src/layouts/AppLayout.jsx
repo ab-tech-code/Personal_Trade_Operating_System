@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+import "../styles/layout.css";
 
 const AppLayout = ({ children }) => {
-  return (
-    <div className="app-layout">
-      <Sidebar />
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-      <div className="app-content">
-        <Topbar />
-        <main>{children}</main>
+  return (
+    <div className="layout">
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <div className="layout-main">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+
+        <main className="layout-content">{children}</main>
       </div>
     </div>
   );

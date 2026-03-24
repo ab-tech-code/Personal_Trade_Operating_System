@@ -1,59 +1,35 @@
 import React from "react";
+import "../../styles/settings-sidebar.css";
+
+const tabs = [
+  { id: "profile", label: "Profile" },
+  { id: "security", label: "Security" },
+  { id: "exchanges", label: "Exchange Settings" },
+  { id: "preferences", label: "Trading Preferences" },
+  { id: "notifications", label: "Notifications" },
+  { id: "privacy", label: "Data & Privacy" },
+  { id: "danger", label: "Danger Zone", danger: true },
+];
 
 const SettingsSidebar = ({ activeTab, setActiveTab }) => {
   return (
-    <div className="settings-sidebar">
+    <aside className="settings-sidebar">
+      <h3 className="sidebar-title">Settings</h3>
 
-      <button
-        className={activeTab === "profile" ? "active" : ""}
-        onClick={() => setActiveTab("profile")}
-      >
-        Profile
-      </button>
-
-      <button
-        className={activeTab === "security" ? "active" : ""}
-        onClick={() => setActiveTab("security")}
-      >
-        Security
-      </button>
-
-      <button
-        className={activeTab === "exchanges" ? "active" : ""}
-        onClick={() => setActiveTab("exchanges")}
-      >
-        Exchange Settings
-      </button>
-
-      <button
-        className={activeTab === "preferences" ? "active" : ""}
-        onClick={() => setActiveTab("preferences")}
-      >
-        Trading Preferences
-      </button>
-
-      <button
-        className={activeTab === "notifications" ? "active" : ""}
-        onClick={() => setActiveTab("notifications")}
-      >
-        Notifications
-      </button>
-
-      <button
-        className={activeTab === "privacy" ? "active" : ""}
-        onClick={() => setActiveTab("privacy")}
-      >
-        Data & Privacy
-      </button>
-
-      <button
-        className={activeTab === "danger" ? "active danger" : "danger"}
-        onClick={() => setActiveTab("danger")}
-      >
-        Danger Zone
-      </button>
-
-    </div>
+      <div className="sidebar-menu">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`sidebar-item 
+              ${activeTab === tab.id ? "active" : ""} 
+              ${tab.danger ? "danger" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </aside>
   );
 };
 

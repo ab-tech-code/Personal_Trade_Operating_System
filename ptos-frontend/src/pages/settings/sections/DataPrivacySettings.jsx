@@ -1,73 +1,128 @@
 import React, { useState } from "react";
 import { apiRequest } from "../../../services/api";
+import "../../../styles/settings-privacy.css";
 
 const DataPrivacySettings = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const exportTrades = async () => {
-    setLoading(true);
-
-    await apiRequest("/settings/export/trades");
-
-    setLoading(false);
-    setMessage("Trades export started");
+  const downloadFile = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
-  const exportAnalytics = async () => {
-    setLoading(true);
+  const handleExport = async (type, endpoint, filename) => {
+    setError("");
+    setMessage("");
 
-    await apiRequest("/settings/export/analytics");
+    try {
+      setLoading(type);
 
-    setLoading(false);
-    setMessage("Analytics export started");
-  };
+      const response = await fetch(
+        `http://localhost:5000/api${endpoint}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
-  const downloadAccountData = async () => {
-    setLoading(true);
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
 
-    await apiRequest("/settings/export/account");
+      const blob = await response.blob();
+      downloadFile(blob, filename);
 
-    setLoading(false);
-    setMessage("Account data export started");
+      setMessage("✅ Download completed");
+    } catch (err) {
+      setError(err.message || "Export failed");
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
-    <div className="settings-section">
-      <h2>Data & Privacy</h2>
+    <div className="privacy-settings">
+      {/* Header */}
+      <div className="section-header">
+        <h2>Data & Privacy</h2>
+        <p>Manage and export your personal trading data</p>
+      </div>
 
-      <div className="settings-action">
+      {/* Messages */}
+      {error && <div className="error-box">{error}</div>}
+      {message && <div className="success-box">{message}</div>}
+
+      {/* Export Trades */}
+      <div className="settings-card">
         <h4>Export Trades</h4>
-        <p>Download your trading history as a CSV file.</p>
-
-        <button className="btn" onClick={exportTrades} disabled={loading}>
-          Export Trades
-        </button>
-      </div>
-
-      <div className="settings-action">
-        <h4>Export Analytics</h4>
-        <p>Download performance analytics report.</p>
-
-        <button className="btn" onClick={exportAnalytics} disabled={loading}>
-          Export Analytics
-        </button>
-      </div>
-
-      <div className="settings-action">
-        <h4>Download Account Data</h4>
-        <p>Download all data stored in your account.</p>
+        <p>Download your full trading history (CSV).</p>
 
         <button
-          className="btn"
-          onClick={downloadAccountData}
-          disabled={loading}
+          className="btn primary-btn"
+          onClick={() =>
+            handleExport("trades", "/settings/export/trades", "trades.csv")
+          }
+          disabled={loading === "trades"}
         >
-          Download Data
+          {loading === "trades" ? "Downloading..." : "Download Trades"}
         </button>
       </div>
 
-      {message && <p className="success">{message}</p>}
+      {/* Export Analytics */}
+      <div className="settings-card">
+        <h4>Export Analytics</h4>
+        <p>Download your performance reports.</p>
+
+        <button
+          className="btn primary-btn"
+          onClick={() =>
+            handleExport(
+              "analytics",
+              "/settings/export/analytics",
+              "analytics.json"
+            )
+          }
+          disabled={loading === "analytics"}
+        >
+          {loading === "analytics"
+            ? "Downloading..."
+            : "Download Analytics"}
+        </button>
+      </div>
+
+      {/* Export Account Data */}
+      <div className="settings-card">
+        <h4>Download Account Data</h4>
+        <p>Export all stored data (GDPR compliance).</p>
+
+        <button
+          className="btn primary-btn"
+          onClick={() =>
+            handleExport(
+              "account",
+              "/settings/export/account",
+              "account-data.json"
+            )
+          }
+          disabled={loading === "account"}
+        >
+          {loading === "account"
+            ? "Downloading..."
+            : "Download Data"}
+        </button>
+      </div>
+
+      {/* Info */}
+      <div className="info-box">
+        🔐 Your data is private. You can export or delete it at any time.
+      </div>
     </div>
   );
 };

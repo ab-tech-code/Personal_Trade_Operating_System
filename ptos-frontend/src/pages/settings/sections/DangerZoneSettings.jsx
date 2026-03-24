@@ -1,111 +1,168 @@
 import React, { useState } from "react";
 import { apiRequest } from "../../../services/api";
+import "../../../styles/settings-danger.css";
 
 const DangerZoneSettings = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const confirmAction = (text) => {
-    return window.confirm(text);
-  };
+  const [confirmText, setConfirmText] = useState("");
+  const [activeAction, setActiveAction] = useState(null);
 
-  const disconnectExchanges = async () => {
-    if (!confirmAction("Disconnect all exchanges? This cannot be undone.")) {
+  const handleAction = async (type, endpoint, confirmKeyword) => {
+    setError("");
+    setMessage("");
+
+    if (confirmText !== confirmKeyword) {
+      setError(`Type "${confirmKeyword}" to confirm`);
       return;
     }
 
-    setLoading(true);
+    try {
+      setLoading(type);
 
-    await apiRequest("/settings/exchanges/disconnect", {
-      method: "DELETE",
-    });
+      await apiRequest(endpoint, {
+        method: "DELETE",
+      });
 
-    setLoading(false);
-    setMessage("All exchanges disconnected");
-  };
-
-  const resetTrades = async () => {
-    if (
-      !confirmAction(
-        "Delete ALL trades? This will permanently remove your trading history."
-      )
-    ) {
-      return;
+      setMessage("✅ Action completed successfully");
+      setConfirmText("");
+      setActiveAction(null);
+    } catch (err) {
+      setError(err.message || "Action failed");
+    } finally {
+      setLoading(null);
     }
-
-    setLoading(true);
-
-    await apiRequest("/settings/trades/reset", {
-      method: "DELETE",
-    });
-
-    setLoading(false);
-    setMessage("All trades deleted");
-  };
-
-  const deleteAccount = async () => {
-    if (
-      !confirmAction(
-        "Delete your account permanently? This cannot be recovered."
-      )
-    ) {
-      return;
-    }
-
-    setLoading(true);
-
-    await apiRequest("/settings/account", {
-      method: "DELETE",
-    });
-
-    setLoading(false);
-    setMessage("Account deletion requested");
   };
 
   return (
-    <div className="settings-section danger-zone">
-      <h2>Danger Zone</h2>
+    <div className="danger-zone-container">
+      {/* Header */}
+      <div className="section-header">
+        <h2>Danger Zone</h2>
+        <p>Irreversible and destructive actions</p>
+      </div>
 
+      {/* Messages */}
+      {error && <div className="error-box">{error}</div>}
+      {message && <div className="success-box">{message}</div>}
+
+      {/* Disconnect Exchanges */}
       <div className="danger-card">
         <h4>Disconnect All Exchanges</h4>
-        <p>Remove all connected exchanges and API keys.</p>
+        <p>Remove all API keys and exchange connections.</p>
 
         <button
-          className="btn danger"
-          onClick={disconnectExchanges}
-          disabled={loading}
+          className="btn danger-btn"
+          onClick={() => setActiveAction("disconnect")}
         >
           Disconnect Exchanges
         </button>
+
+        {activeAction === "disconnect" && (
+          <div className="confirm-box">
+            <p>Type <strong>DISCONNECT</strong> to confirm:</p>
+
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+
+            <button
+              className="btn danger-btn"
+              onClick={() =>
+                handleAction(
+                  "disconnect",
+                  "/settings/exchanges/disconnect",
+                  "DISCONNECT"
+                )
+              }
+              disabled={loading === "disconnect"}
+            >
+              {loading === "disconnect" ? "Processing..." : "Confirm"}
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Reset Trades */}
       <div className="danger-card">
         <h4>Reset Trading Data</h4>
-        <p>Delete all trades and analytics data permanently.</p>
+        <p>Delete all trades and analytics permanently.</p>
 
         <button
-          className="btn danger"
-          onClick={resetTrades}
-          disabled={loading}
+          className="btn danger-btn"
+          onClick={() => setActiveAction("reset")}
         >
           Reset Trades
         </button>
+
+        {activeAction === "reset" && (
+          <div className="confirm-box">
+            <p>Type <strong>DELETE</strong> to confirm:</p>
+
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+
+            <button
+              className="btn danger-btn"
+              onClick={() =>
+                handleAction(
+                  "reset",
+                  "/settings/trades/reset",
+                  "DELETE"
+                )
+              }
+              disabled={loading === "reset"}
+            >
+              {loading === "reset" ? "Processing..." : "Confirm"}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="danger-card">
+      {/* Delete Account */}
+      <div className="danger-card critical">
         <h4>Delete Account</h4>
-        <p>Permanently delete your account and all stored data.</p>
+        <p>Permanently delete your account and all data.</p>
 
         <button
-          className="btn danger"
-          onClick={deleteAccount}
-          disabled={loading}
+          className="btn danger-btn"
+          onClick={() => setActiveAction("delete")}
         >
           Delete Account
         </button>
-      </div>
 
-      {message && <p className="success">{message}</p>}
+        {activeAction === "delete" && (
+          <div className="confirm-box">
+            <p>
+              Type <strong>DELETE ACCOUNT</strong> to confirm:
+            </p>
+
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+            />
+
+            <button
+              className="btn danger-btn"
+              onClick={() =>
+                handleAction(
+                  "delete",
+                  "/settings/account",
+                  "DELETE ACCOUNT"
+                )
+              }
+              disabled={loading === "delete"}
+            >
+              {loading === "delete" ? "Processing..." : "Confirm"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

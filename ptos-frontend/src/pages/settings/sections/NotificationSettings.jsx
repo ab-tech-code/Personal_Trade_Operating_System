@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiRequest } from "../../../services/api";
+import "../../../styles/settings-notifications.css";
 
 const NotificationSettings = () => {
   const [notifications, setNotifications] = useState({
@@ -11,18 +12,23 @@ const NotificationSettings = () => {
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const loadNotifications = async () => {
-      const data = await apiRequest("/settings");
+      try {
+        const data = await apiRequest("/settings");
 
-      if (data.notifications) {
-        setNotifications({
-          emailNotifications: data.notifications.emailNotifications ?? true,
-          tradeSyncAlerts: data.notifications.tradeSyncAlerts ?? true,
-          dailyReport: data.notifications.dailyReport ?? false,
-          riskWarnings: data.notifications.riskWarnings ?? true,
-        });
+        if (data.notifications) {
+          setNotifications({
+            emailNotifications: data.notifications.emailNotifications ?? true,
+            tradeSyncAlerts: data.notifications.tradeSyncAlerts ?? true,
+            dailyReport: data.notifications.dailyReport ?? false,
+            riskWarnings: data.notifications.riskWarnings ?? true,
+          });
+        }
+      } catch (err) {
+        setError("Failed to load notification settings");
       }
     };
 
@@ -30,82 +36,134 @@ const NotificationSettings = () => {
   }, []);
 
   const saveNotifications = async () => {
-    setSaving(true);
+    setError("");
+    setMessage("");
 
-    await apiRequest("/settings/notifications", {
-      method: "PUT",
-      body: JSON.stringify(notifications),
-    });
+    try {
+      setSaving(true);
 
-    setSaving(false);
-    setMessage("Notification settings saved");
+      await apiRequest("/settings/notifications", {
+        method: "PUT",
+        body: JSON.stringify(notifications),
+      });
+
+      setMessage("✅ Notification settings saved");
+    } catch (err) {
+      setError(err.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="settings-section">
-      <h2>Notifications</h2>
+    <div className="notification-settings">
+      {/* Header */}
+      <div className="section-header">
+        <h2>Notifications</h2>
+        <p>Control how and when you receive alerts</p>
+      </div>
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={notifications.emailNotifications}
-          onChange={(e) =>
-            setNotifications({
-              ...notifications,
-              emailNotifications: e.target.checked,
-            })
-          }
-        />
-        Enable Email Notifications
-      </label>
+      {/* Messages */}
+      {error && <div className="error-box">{error}</div>}
+      {message && <div className="success-box">{message}</div>}
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={notifications.tradeSyncAlerts}
-          onChange={(e) =>
-            setNotifications({
-              ...notifications,
-              tradeSyncAlerts: e.target.checked,
-            })
-          }
-        />
-        Notify When Trades Are Synced
-      </label>
+      {/* Email Notifications */}
+      <div className="settings-card">
+        <div className="card-header">
+          <h4>Email Notifications</h4>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={notifications.emailNotifications}
+              onChange={(e) =>
+                setNotifications({
+                  ...notifications,
+                  emailNotifications: e.target.checked,
+                })
+              }
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={notifications.dailyReport}
-          onChange={(e) =>
-            setNotifications({
-              ...notifications,
-              dailyReport: e.target.checked,
-            })
-          }
-        />
-        Send Daily Performance Report
-      </label>
+        <p className="card-desc">
+          Receive important updates via email.
+        </p>
+      </div>
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={notifications.riskWarnings}
-          onChange={(e) =>
-            setNotifications({
-              ...notifications,
-              riskWarnings: e.target.checked,
-            })
-          }
-        />
-        Enable Risk Warning Alerts
-      </label>
+      {/* Trade Alerts */}
+      <div className="settings-card">
+        <h4>Trade Alerts</h4>
 
-      <button className="btn" onClick={saveNotifications} disabled={saving}>
-        {saving ? "Saving..." : "Save Notifications"}
-      </button>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={notifications.tradeSyncAlerts}
+            disabled={!notifications.emailNotifications}
+            onChange={(e) =>
+              setNotifications({
+                ...notifications,
+                tradeSyncAlerts: e.target.checked,
+              })
+            }
+          />
+          Notify when trades are synced
+        </label>
 
-      {message && <p className="success">{message}</p>}
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={notifications.dailyReport}
+            disabled={!notifications.emailNotifications}
+            onChange={(e) =>
+              setNotifications({
+                ...notifications,
+                dailyReport: e.target.checked,
+              })
+            }
+          />
+          Send daily performance report
+        </label>
+      </div>
+
+      {/* Risk Alerts */}
+      <div className="settings-card">
+        <h4>Risk Alerts</h4>
+
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={notifications.riskWarnings}
+            onChange={(e) =>
+              setNotifications({
+                ...notifications,
+                riskWarnings: e.target.checked,
+              })
+            }
+          />
+          Enable risk warning alerts
+        </label>
+
+        <p className="card-desc">
+          Alerts when your performance drops or risk increases.
+        </p>
+      </div>
+
+      {/* Info */}
+      <div className="info-box">
+        📩 Notifications help you stay disciplined and aware of your trading performance.
+      </div>
+
+      {/* Action */}
+      <div className="form-actions">
+        <button
+          className="btn primary-btn"
+          onClick={saveNotifications}
+          disabled={saving}
+        >
+          {saving ? "Saving..." : "Save Notifications"}
+        </button>
+      </div>
     </div>
   );
 };

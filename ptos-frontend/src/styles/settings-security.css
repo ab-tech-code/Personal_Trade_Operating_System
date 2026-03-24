@@ -1,0 +1,90 @@
+.security-settings {
+  width: 100%;
+}
+
+/* Header */
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 20px;
+}
+
+.section-header p {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Messages */
+.error-box {
+  background: rgba(255, 80, 80, 0.1);
+  color: #ff5050;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.success-box {
+  background: rgba(0, 200, 100, 0.1);
+  color: #00c864;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+/* Form */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #2b3139;
+  color: white;
+}
+
+/* Strength */
+.password-strength {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.password-strength.weak {
+  color: red;
+}
+
+.password-strength.medium {
+  color: orange;
+}
+
+.password-strength.strong {
+  color: #00c864;
+}
+
+/* Checkbox */
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+/* Button */
+.form-actions {
+  margin-top: 10px;
+}
+
+.primary-btn {
+  background: #2962ff;
+  color: white;
+}
