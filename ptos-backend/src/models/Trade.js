@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 
 /**
  * Trade Schema
- * This is the single source of truth for ALL analytics.
- * Every trade (manual or exchange) MUST fit this format.
+ * Single source of truth for ALL analytics
  */
 const TradeSchema = new mongoose.Schema(
   {
@@ -14,33 +13,29 @@ const TradeSchema = new mongoose.Schema(
       index: true,
     },
 
-    /**
-     * Trade origin
-     * - manual: entered by user
-     * - exchange: fetched via CCXT
-     */
     source: {
       type: String,
       enum: ["manual", "exchange"],
       required: true,
     },
 
-    /**
-     * Exchange name
-     * null for manual trades
-     */
     exchange: {
       type: String,
       lowercase: true,
       default: null,
     },
 
-    /**
-     * Unique trade ID from exchange
-     * Required ONLY for exchange trades
-     */
     externalTradeId: {
       type: String,
+      default: null,
+    },
+
+    /**
+     * 🔥 NEW: Strong deduplication key
+     */
+    uniqueKey: {
+      type: String,
+      index: true,
       default: null,
     },
 
@@ -51,10 +46,6 @@ const TradeSchema = new mongoose.Schema(
       index: true,
     },
 
-    /**
-     * buy = long entry
-     * sell = short entry
-     */
     side: {
       type: String,
       enum: ["buy", "sell"],
@@ -78,10 +69,6 @@ const TradeSchema = new mongoose.Schema(
       min: 0,
     },
 
-    /**
-     * Profit & Loss (absolute value)
-     * Positive = win, Negative = loss
-     */
     pnl: {
       type: Number,
       default: 0,
@@ -113,8 +100,7 @@ const TradeSchema = new mongoose.Schema(
 );
 
 /**
- * Prevent duplicate exchange trades
- * (manual trades can repeat)
+ * ✅ OLD protection (keep it)
  */
 TradeSchema.index(
   {
@@ -127,6 +113,24 @@ TradeSchema.index(
     partialFilterExpression: {
       source: "exchange",
       externalTradeId: { $ne: null },
+    },
+  }
+);
+
+/**
+ * 🔥 NEW: STRONG duplicate protection
+ */
+TradeSchema.index(
+  {
+    user: 1,
+    exchange: 1,
+    uniqueKey: 1,
+  },
+  {
+    unique: true,
+    partialFilterExpression: {
+      source: "exchange",
+      uniqueKey: { $ne: null },
     },
   }
 );

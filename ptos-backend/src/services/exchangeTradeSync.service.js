@@ -7,7 +7,33 @@ const {
 } = require("./tradeNormalizer.service");
 
 /**
- * Fetch, verify & store trades from exchange
+ * Safe rounding helper
+ */
+const round = (num, decimals = 4) => {
+  return Number(parseFloat(num).toFixed(decimals));
+};
+
+/**
+ * Retry wrapper for unstable exchange calls
+ */
+const withRetry = async (fn, retries = 2) => {
+  try {
+    return await fn();
+  } catch (err) {
+    if (retries <= 0) throw err;
+    return await withRetry(fn, retries - 1);
+  }
+};
+
+/**
+ * Generate stronger unique key (prevents duplicates)
+ */
+const generateUniqueKey = (trade) => {
+  return `${trade.symbol}-${trade.timestamp}-${trade.side}-${trade.amount}-${trade.price}`;
+};
+
+/**
+ * Sync trades
  */
 exports.syncExchangeTrades = async (userId, exchangeId) => {
   const exchangeConfig = await Exchange.findOne({
@@ -25,63 +51,76 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
     throw new Error("Unsupported exchange");
   }
 
-const exchange = new ExchangeClass({
-  apiKey: decrypt(exchangeConfig.apiKey),
-  secret: decrypt(exchangeConfig.apiSecret),
-  password: exchangeConfig.apiPassword
-    ? decrypt(exchangeConfig.apiPassword)
-    : undefined,
+  const exchange = new ExchangeClass({
+    apiKey: decrypt(exchangeConfig.apiKey),
+    secret: decrypt(exchangeConfig.apiSecret),
+    password: exchangeConfig.apiPassword
+      ? decrypt(exchangeConfig.apiPassword)
+      : undefined,
+    enableRateLimit: true,
+    timeout: 30000,
+  });
 
-  enableRateLimit: true,
+  /**
+   * ✅ AUTH CHECK (stable)
+   */
+  try {
+    await withRetry(() => exchange.fetchBalance());
 
-  timeout: 30000, // 🔥 increase to 30s
-});
+    exchangeConfig.status = "VERIFIED";
+  } catch (err) {
+    exchangeConfig.status = "AUTH_FAILED";
+    await exchangeConfig.save();
 
-// Lightweight auth test (safer)
-try {
-  await exchange.fetchBalance(); // MUCH more reliable
+    throw new Error(
+      `Exchange authentication failed: ${exchangeConfig.exchange} ${err.message}`
+    );
+  }
 
-  exchangeConfig.status = "VERIFIED";
-} catch (err) {
-  exchangeConfig.status = "AUTH_FAILED";
-  await exchangeConfig.save();
+  /**
+   * ✅ FETCH TRADES (safe)
+   */
+  let trades = [];
 
-  throw new Error(
-    `Exchange authentication failed: ${exchangeConfig.exchange} ${err.message}`
-  );
-}
+  try {
+    const since = exchangeConfig.lastSyncAt
+      ? exchangeConfig.lastSyncAt.getTime()
+      : undefined;
 
-  // Fetch only new trades
-  const since = exchangeConfig.lastSyncAt
-    ? exchangeConfig.lastSyncAt.getTime()
-    : undefined;
-
-  const trades = await exchange.fetchMyTrades(
-    undefined,
-    since
-  );
+    trades = await withRetry(() =>
+      exchange.fetchMyTrades(undefined, since)
+    );
+  } catch (err) {
+    throw new Error(
+      `Failed to fetch trades: ${exchangeConfig.exchange} ${err.message}`
+    );
+  }
 
   let inserted = 0;
 
   for (const trade of trades) {
+    const uniqueKey = generateUniqueKey(trade);
+
+    // 🔥 Strong duplicate protection
+    const exists = await Trade.findOne({
+      user: userId,
+      exchange: exchangeConfig.exchange,
+      uniqueKey,
+    });
+
+    if (exists) continue;
+
     const normalized = normalizeExchangeTrade({
       userId,
       exchange: exchangeConfig.exchange,
       trade,
     });
 
-    // Skip if already imported
-    const exists = await Trade.findOne({
-      user: userId,
-      exchange: exchangeConfig.exchange,
-      externalTradeId: normalized.externalTradeId,
-    });
+    normalized.uniqueKey = uniqueKey;
 
-    if (exists) {
-      continue;
-    }
-
-    // Try to match opposite OPEN trade
+    /**
+     * MATCH LOGIC
+     */
     const oppositeSide =
       normalized.side === "buy" ? "sell" : "buy";
 
@@ -94,27 +133,28 @@ try {
     }).sort({ openedAt: 1 });
 
     if (openTrade) {
-      // Calculate PnL
-      const pnl =
+      const quantity = Math.min(
+        openTrade.quantity,
+        normalized.quantity
+      );
+
+      const rawPnL =
         normalized.side === "sell"
-          ? (normalized.entryPrice -
-              openTrade.entryPrice) *
-            openTrade.quantity
-          : (openTrade.entryPrice -
-              normalized.entryPrice) *
-            openTrade.quantity;
+          ? (normalized.entryPrice - openTrade.entryPrice) *
+            quantity
+          : (openTrade.entryPrice - normalized.entryPrice) *
+            quantity;
+
+      const pnl =
+        rawPnL - (openTrade.fee || 0) - (normalized.fee || 0);
 
       openTrade.exitPrice = normalized.entryPrice;
-      openTrade.closedAt = new Date(
-        normalized.openedAt
-      );
-      openTrade.pnl =
-        pnl - openTrade.fee - normalized.fee;
+      openTrade.closedAt = new Date(normalized.openedAt);
+      openTrade.pnl = round(pnl, 4);
       openTrade.status = "CLOSED";
 
       await openTrade.save();
     } else {
-      // Store as OPEN trade
       await Trade.create(normalized);
     }
 

@@ -15,6 +15,7 @@ const ExchangeSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     exchange: {
@@ -41,10 +42,50 @@ const ExchangeSchema = new mongoose.Schema(
       type: String,
       enum: ["CONNECTED_UNVERIFIED", "VERIFIED", "AUTH_FAILED"],
       default: "CONNECTED_UNVERIFIED",
+      index: true,
     },
 
+    /**
+     * 🔥 AUTO SYNC SETTINGS
+     */
+    autoSync: {
+      type: Boolean,
+      default: true,
+    },
+
+    syncInterval: {
+      type: Number,
+      default: 15, // minutes
+    },
+
+    /**
+     * 🔥 SYNC TRACKING
+     */
     lastSyncAt: {
       type: Date,
+    },
+
+    lastSuccessfulSync: {
+      type: Date,
+    },
+
+    lastSyncStatus: {
+      type: String,
+      enum: ["SUCCESS", "FAILED"],
+      default: null,
+    },
+
+    lastError: {
+      type: String,
+      default: null,
+    },
+
+    /**
+     * 🔥 PREVENT DOUBLE SYNC
+     */
+    isSyncing: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
