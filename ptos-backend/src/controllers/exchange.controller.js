@@ -72,11 +72,11 @@ exports.getExchanges = async (req, res) => {
  * SYNC / VERIFY EXCHANGE
  */
 exports.syncExchange = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const exchangeId = req.params.id;
+  const userId = req.user.id;
+  const exchangeId = req.params.id;
 
-    // ✅ Validate ObjectId (fixes <!DOCTYPE error)
+  try {
+    // ✅ Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(exchangeId)) {
       return res.status(400).json({
         message: "Invalid exchange ID",
@@ -101,7 +101,7 @@ exports.syncExchange = async (req, res) => {
       });
     }
 
-    // 🔒 Lock sync
+    // 🔒 Lock
     exchange.isSyncing = true;
     exchange.lastError = null;
     await exchange.save();
@@ -119,18 +119,17 @@ exports.syncExchange = async (req, res) => {
       exchange.lastSyncStatus = "FAILED";
       exchange.lastError = err.message;
 
-      await exchange.save();
-
+      // ❌ DO NOT return here anymore
       return res.status(400).json({
         message: err.message,
       });
+    } finally {
+      // ✅ ALWAYS RUNS (THIS FIXES YOUR ISSUE)
+      exchange.isSyncing = false;
+      exchange.lastSyncAt = new Date();
+
+      await exchange.save();
     }
-
-    // ✅ Unlock sync
-    exchange.isSyncing = false;
-    exchange.lastSyncAt = new Date();
-
-    await exchange.save();
 
     res.json({
       message: "Exchange synced successfully",

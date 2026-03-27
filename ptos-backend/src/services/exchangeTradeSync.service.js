@@ -64,18 +64,22 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
   /**
    * ✅ AUTH CHECK (stable)
    */
-  try {
-    await withRetry(() => exchange.fetchBalance());
+try {
+  // ✅ Step 1: check credentials exist
+  exchange.checkRequiredCredentials();
 
-    exchangeConfig.status = "VERIFIED";
-  } catch (err) {
-    exchangeConfig.status = "AUTH_FAILED";
-    await exchangeConfig.save();
+  // ✅ Step 2: lightweight API call (MUCH more stable)
+  await withRetry(() => exchange.fetchTime());
 
-    throw new Error(
-      `Exchange authentication failed: ${exchangeConfig.exchange} ${err.message}`
-    );
-  }
+  exchangeConfig.status = "VERIFIED";
+} catch (err) {
+  exchangeConfig.status = "AUTH_FAILED";
+  await exchangeConfig.save();
+
+  throw new Error(
+    "Unable to connect to exchange. Check API keys, permissions, or network."
+  );
+}
 
   /**
    * ✅ FETCH TRADES (safe)

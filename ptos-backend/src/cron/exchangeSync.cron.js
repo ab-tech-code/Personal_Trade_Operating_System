@@ -17,27 +17,29 @@ cron.schedule("*/5 * * * *", async () => {
 
     for (const exchange of exchanges) {
       try {
-        // 🔒 Prevent double sync
         if (exchange.isSyncing) {
           console.log(`⏭ Skipping ${exchange.exchange} (already syncing)`);
           continue;
         }
 
-        // ⏱ Respect sync interval
+        if (exchange.status === "AUTH_FAILED") {
+          console.log(`⚠️ Skipping ${exchange.exchange} (auth failed)`);
+          continue;
+        }
+
         if (exchange.lastSyncAt) {
           const minutesSinceLastSync =
             (Date.now() - new Date(exchange.lastSyncAt).getTime()) / 60000;
 
-          if (minutesSinceLastSync < exchange.syncInterval) {
+          const interval = exchange.syncInterval || 10;
+
+          if (minutesSinceLastSync < interval) {
             continue;
           }
         }
 
-        console.log(
-          `🔄 Auto-syncing ${exchange.exchange} (${exchange._id})`
-        );
+        console.log(`🔄 Auto-syncing ${exchange.exchange}`);
 
-        // 🔒 Lock
         exchange.isSyncing = true;
         await exchange.save();
 
@@ -51,22 +53,15 @@ cron.schedule("*/5 * * * *", async () => {
           exchange.lastSuccessfulSync = new Date();
           exchange.status = "VERIFIED";
 
-          console.log(
-            `✅ ${exchange.exchange} synced`,
-            result
-          );
+          console.log(`✅ ${exchange.exchange} synced`, result);
         } catch (err) {
           exchange.lastSyncStatus = "FAILED";
           exchange.lastError = err.message;
           exchange.status = "AUTH_FAILED";
 
-          console.log(
-            `❌ ${exchange.exchange} failed:`,
-            err.message
-          );
+          console.log(`❌ ${exchange.exchange} failed:`, err.message);
         }
 
-        // 🔓 Unlock
         exchange.isSyncing = false;
         exchange.lastSyncAt = new Date();
 
