@@ -57,9 +57,18 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
     password: exchangeConfig.apiPassword
       ? decrypt(exchangeConfig.apiPassword)
       : undefined,
+
     enableRateLimit: true,
     timeout: 30000,
+
+    options: {
+      adjustForTimeDifference: true,
+      recvWindow: 10000,
+    },
   });
+
+  // 🔥 FORCE TIME SYNC
+  await exchange.loadTimeDifference();
 
   /**
    * ✅ AUTH CHECK (stable)
