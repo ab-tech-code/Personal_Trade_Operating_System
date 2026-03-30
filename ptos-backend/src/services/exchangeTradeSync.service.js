@@ -73,22 +73,29 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
   /**
    * ✅ AUTH CHECK (stable)
    */
-try {
-  // ✅ Step 1: check credentials exist
-  exchange.checkRequiredCredentials();
 
-  // ✅ Step 2: lightweight API call (MUCH more stable)
-  await withRetry(() => exchange.fetchTime());
+  try {
+    exchange.checkRequiredCredentials();
 
-  exchangeConfig.status = "VERIFIED";
-} catch (err) {
-  exchangeConfig.status = "AUTH_FAILED";
-  await exchangeConfig.save();
+    try {
+      // 🔥 Primary (fast but sometimes blocked)
+      await withRetry(() => exchange.fetchTime());
+    } catch (err) {
+      console.log("⚠️ fetchTime failed, trying fallback...");
 
-  throw new Error(
-    "Unable to connect to exchange. Check API keys, permissions, or network."
-  );
-}
+      // 🔥 Fallback (more reliable in restricted regions)
+      await withRetry(() => exchange.loadMarkets());
+    }
+
+    exchangeConfig.status = "VERIFIED";
+  } catch (err) {
+    exchangeConfig.status = "AUTH_FAILED";
+    await exchangeConfig.save();
+
+    throw new Error(
+      "Unable to connect to exchange (network or API issue). Try again later or use VPN."
+    );
+  }
 
   /**
    * ✅ FETCH TRADES (safe)
@@ -100,13 +107,27 @@ try {
       ? exchangeConfig.lastSyncAt.getTime()
       : undefined;
 
-    trades = await withRetry(() =>
-      exchange.fetchMyTrades(undefined, since)
-    );
+    try {
+      trades = await withRetry(() =>
+        exchange.fetchMyTrades(undefined, since)
+      );
+    } catch (err) {
+      console.log("⚠️ fetchMyTrades(since) failed, retrying without since...");
+
+      // 🔥 fallback (some exchanges reject 'since')
+      trades = await withRetry(() =>
+        exchange.fetchMyTrades()
+      );
+    }
   } catch (err) {
-    throw new Error(
-      `Failed to fetch trades: ${exchangeConfig.exchange} ${err.message}`
-    );
+    console.log("⚠️ Trade fetch failed:", err.message);
+
+    // 🔥 DO NOT BREAK SYSTEM
+    return {
+      fetched: 0,
+      inserted: 0,
+      warning: "Trade fetch failed due to network/exchange issue",
+    };
   }
 
   let inserted = 0;
