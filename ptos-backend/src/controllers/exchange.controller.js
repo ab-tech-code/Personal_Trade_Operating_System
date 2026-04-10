@@ -133,7 +133,9 @@ exports.syncExchange = async (req, res) => {
 
     res.json({
       message: "Exchange synced successfully",
-      ...result,
+      fetched: result.fetched,
+      inserted: result.inserted,
+      warning: result.warning || null,
     });
   } catch (err) {
     res.status(500).json({

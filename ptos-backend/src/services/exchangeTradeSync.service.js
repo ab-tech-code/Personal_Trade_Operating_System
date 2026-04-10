@@ -155,15 +155,16 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
     /**
      * MATCH LOGIC
      */
-    const oppositeSide =
-      normalized.side === "buy" ? "sell" : "buy";
+    /**
+     * MATCH LOGIC (FIXED FOR FUTURES)
+     */
 
+    // 🔍 find ANY open trade for this symbol
     const openTrade = await Trade.findOne({
       user: userId,
       symbol: normalized.symbol,
       source: "exchange",
       status: "OPEN",
-      side: oppositeSide,
     }).sort({ openedAt: 1 });
 
     if (openTrade) {
@@ -172,12 +173,27 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
         normalized.quantity
       );
 
-      const rawPnL =
-        normalized.side === "sell"
-          ? (normalized.entryPrice - openTrade.entryPrice) *
-            quantity
-          : (openTrade.entryPrice - normalized.entryPrice) *
-            quantity;
+      let rawPnL = 0;
+
+      // ✅ LONG: buy → sell
+      if (openTrade.side === "buy" && normalized.side === "sell") {
+        rawPnL =
+          (normalized.entryPrice - openTrade.entryPrice) *
+          quantity;
+      }
+
+      // ✅ SHORT: sell → buy
+      else if (openTrade.side === "sell" && normalized.side === "buy") {
+        rawPnL =
+          (openTrade.entryPrice - normalized.entryPrice) *
+          quantity;
+      }
+
+      // ❌ Same direction → NOT closing
+      else {
+        await Trade.create(normalized);
+        continue;
+      }
 
       const pnl =
         rawPnL - (openTrade.fee || 0) - (normalized.fee || 0);
@@ -189,6 +205,7 @@ exports.syncExchangeTrades = async (userId, exchangeId) => {
 
       await openTrade.save();
     } else {
+      // No open trade → create new one
       await Trade.create(normalized);
     }
 
